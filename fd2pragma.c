@@ -1,5 +1,5 @@
 static const char version[] =
-"$VER: fd2pragma 2.173 (10.05.2004) by Dirk Stoecker <stoecker@epost.de>";
+"$VER: fd2pragma 2.177 (23.09.2004) by Dirk Stoecker <stoecker@epost.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -272,6 +272,11 @@ static const char version[] =
         recognition for MorphOS, never use "Device *" pointer in a proto file
         - should be "Library *"
  2.173 10.05.04 : fixed MOS-base,sysv to allow autodetected Tag-Functions
+ 2.174 23.05.04 : some fixes for MorphOS and VBCC
+ 2.175 11.07.04 : (phx) has to recognize and skip 'extern "C" {', as a
+        result of my modifications in 2.172.
+ 2.176 21.09.04 : added new MorphOS VBCC inlines and some other OS4 fixes
+ 2.177 23.09.04 : minor bugfix
 */
 
 /* A short note, how fd2pragma works.
@@ -402,24 +407,25 @@ typedef char *             strptr;      /* and an string pointer */
 #define FLAG_DIDM68KWARN (1<<30) /* we already printed M68K warning */
 #define FLAG_ABIV4       (1<<31) /* ABI V4 design for PPC-LVO */
 
-#define FLAG2_SFDMODE       (1<< 0) /* input file was SFD file */
-#define FLAG2_LIBTYPE       (1<< 1) /* libtype was specified on command line */
-#define FLAG2_CLIBOUT       (1<< 2) /* output type is CLIB */
-#define FLAG2_SYSTEMRELEASE (1<< 3) /* systemrelease special comment handling */
-#define FLAG2_SFDOUT        (1<< 4) /* output type is SFD */
-#define FLAG2_LIBNAME       (1<< 5) /* libname was specified on command line */
-#define FLAG2_SMALLCODE     (1<< 6) /* libraries use small code modell */
-#define FLAG2_VOIDBASE      (1<< 7) /* library base should be of type "void *" */
-#define FLAG2_INLINEMAC     (1<< 8) /* use inline macro instead of function */
-#define FLAG2_DIRECTVARARGS (1<< 9) /* direct varargs for MorphOS stub libs */
-#define FLAG2_PRELIB        (1<<10) /* MorphOS gate PRELIB flag */
-#define FLAG2_POSTLIB       (1<<11) /* MorphOS gate POSTLIB flag */
-#define FLAG2_REGLIB        (1<<12) /* MorphOS gate REGLIB flag */
-#define FLAG2_OLDVBCC       (1<<13) /* old VBCC style */
-#define FLAG2_SMALLTYPES    (1<<14) /* allow small data types */
-#define FLAG2_AUTOHEADER    (1<<15) /* creates auto generated header */
-#define FLAG2_LIBNAMECOM    (1<<16) /* libname was specified in SFD comment */
-#define FLAG2_OS4M68KCSTUB  (1<<17) /* OS4 M68K stub needs C */
+#define FLAG2_SFDMODE            (1<< 0) /* input file was SFD file */
+#define FLAG2_LIBTYPE            (1<< 1) /* libtype was specified on command line */
+#define FLAG2_CLIBOUT            (1<< 2) /* output type is CLIB */
+#define FLAG2_SYSTEMRELEASE      (1<< 3) /* systemrelease special comment handling */
+#define FLAG2_SFDOUT             (1<< 4) /* output type is SFD */
+#define FLAG2_LIBNAME            (1<< 5) /* libname was specified on command line */
+#define FLAG2_SMALLCODE          (1<< 6) /* libraries use small code modell */
+#define FLAG2_VOIDBASE           (1<< 7) /* library base should be of type "void *" */
+#define FLAG2_INLINEMAC          (1<< 8) /* use inline macro instead of function */
+#define FLAG2_DIRECTVARARGS      (1<< 9) /* direct varargs for MorphOS stub libs */
+#define FLAG2_PRELIB             (1<<10) /* MorphOS gate PRELIB flag */
+#define FLAG2_POSTLIB            (1<<11) /* MorphOS gate POSTLIB flag */
+#define FLAG2_REGLIB             (1<<12) /* MorphOS gate REGLIB flag */
+#define FLAG2_OLDVBCC            (1<<13) /* old VBCC style */
+#define FLAG2_SMALLTYPES         (1<<14) /* allow small data types */
+#define FLAG2_AUTOHEADER         (1<<15) /* creates auto generated header */
+#define FLAG2_LIBNAMECOM         (1<<16) /* libname was specified in SFD comment */
+#define FLAG2_OS4M68KCSTUB       (1<<17) /* OS4 M68K stub needs C */
+#define FLAG2_SHORTPPCVBCCINLINE (1<<18) /* shorter PPC inline using argument */
 
 #define FUNCFLAG_NORMAL     (1<<0) /* normal function */
 #define FUNCFLAG_TAG        (1<<1) /* a tagcall function */
@@ -466,10 +472,7 @@ typedef char *             strptr;      /* and an string pointer */
 #define MODUS_GENAUTO           110   /* and 111 to 113         */
 #define MODUS_ERROR             200
 
-#define ABI_M68K                1
-#define ABI_PPC                 2
-#define ABI_PPC2                3
-#define ABI_PPC0                4
+enum ABI {ABI_M68K, ABI_PPC, ABI_PPC2, ABI_PPC0};
 
 /* call types for CallFunc */
 #define TAGMODE_NORMAL  0    /* produce normal functions only */
@@ -582,7 +585,7 @@ struct AmiPragma {
   uint16                         CallArgs; /* argument number in fd file */
   int16                          Bias;
   int8                           NumAlias;
-  int8                           Abi;
+  enum ABI                       Abi;
   struct AmiArgs                 Args[MAXREGPPC];
 };
 
@@ -868,7 +871,7 @@ static uint8 *                 elfbufpos       = 0;
 /* Only for PPC-LVO Lib's */
 static uint32                  symoffset       = 0;
 /* Only for FD, SFD creation */
-static uint32                  CurrentABI      = 0;
+static enum ABI                CurrentABI      = ABI_M68K;
 
 /* Prototypes for the functions */
 static strptr  DupString(strptr, size_t);
@@ -891,7 +894,7 @@ static void    SortFDList(void);
 static void    AddAliasName(struct AmiPragma *, struct Pragma_AliasName *,
                uint32);
 static uint32  CheckNames(struct AmiPragma *);
-static uint32  ScanSFDFile(uint32);
+static uint32  ScanSFDFile(enum ABI);
 static uint32  ScanFDFile(void);
 static int32   ScanTypes(strptr, uint32);
 static void    FindHeader(void);
@@ -1007,7 +1010,7 @@ static uint32 CreateClib(uint32);
 static uint32 CreateGenAuto(strptr, uint32);
 static uint32 CreateXML(void);
 static uint32 CreateOS4PPC(uint32);
-static uint32 CreateOS4M68K(uint32);
+static uint32 CreateOS4M68K(void);
 /* ------------------------------------------------------------------ */
 static uint32 GetName(struct NameList *, struct ShortListRoot *, uint32);
 static uint32 MakeFD(struct PragList *);
@@ -1616,7 +1619,7 @@ static const struct Proto_LibType Proto_LibTypes[] = {
 {"MC68060Base",           0,                "68060.library",       "mc68060"},
 {"MC68040Base",           0,                "68040.library",       "mc68040"},
 {"MC680x0Base",           0,                "680x0.library",       "mc680x0"},
-{0, 0},
+{0, 0, 0, 0},
 };
 
 /* CachePostDMA, CachePreDMA are done by #?DMA check */
@@ -2194,7 +2197,7 @@ static void SortFDList(void)
 static void AddAliasName(struct AmiPragma *ap, struct Pragma_AliasName *alias,
 uint32 linenum)
 {
-  uint32 i;
+  int8 i;
 
   if(ap->NumAlias > NUMALIASNAMES)
     DoError(ERR_ALIASNAMES, linenum, NUMALIASNAMES);
@@ -2258,7 +2261,7 @@ static uint32 CheckNames(struct AmiPragma *ap)
   return 1;
 }
 
-static uint32 ScanSFDFile(uint32 abi)
+static uint32 ScanSFDFile(enum ABI abi)
 {
   uint32 _public = 1;
   int32 bias = -1;
@@ -2991,7 +2994,7 @@ static uint32 ScanFDFile(void)
   size_t len;
   uint32 actcom = 0;
   uint32 shadowmode = 0;
-  uint32 abi = ABI_M68K;
+  enum ABI abi = ABI_M68K;
 
   if(defabi)
   {
@@ -6571,6 +6574,9 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
   }
 
   OutClibType(&cd->ReturnType, 0);
+  if((flags & FUNCFLAG_TAG) && (Flags2 & FLAG2_SHORTPPCVBCCINLINE))
+    DoOutput(" __aos4varargs");
+
   DoOutput(" __%s("/*)*/, name);
 
   if(BaseName)
@@ -6580,10 +6586,13 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
       DoOutput(", ");
   }
 
-  if(flags & FUNCFLAG_TAG && !(ap->Flags & AMIPRAGFLAG_MOSBASESYSV))
+  if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
   {
-    for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
-      DoOutput("long, ");
+    if((flags & FUNCFLAG_TAG) && !(ap->Flags & AMIPRAGFLAG_MOSBASESYSV))
+    {
+      for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
+        DoOutput("long, ");
+    }
   }
 
   k = (flags & FUNCFLAG_TAG) ? ap->NumArgs-1 : ap->NumArgs;
@@ -6596,30 +6605,54 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
-    if(cd->Args[k].Type != CPP_TYPE_VARARGS)
+    if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
     {
-      OutClibType(&cd->Args[k], ap->Args[k].ArgName);
-      DoOutput(", ");
+      if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+      && !(ap->Flags & AMIPRAGFLAG_VARARGS))
+      {
+        for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
+          DoOutput("long, ");
+      }
+      if(cd->Args[k].Type != CPP_TYPE_VARARGS)
+      {
+        OutClibType(&cd->Args[k], ap->Args[k].ArgName);
+        DoOutput(", ");
+      }
     }
+
     DoOutput("...");
   }
 
   if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
   {
-    DoOutput(/*(*/") =\n\t\"\\tlwz\\t%s0,-%d(%s3)\\n\"\n"
-    "\t\"\\tmtlr\\t%s0\\n\"\n"
-    "\t\"\\tblrl\";\n",
-    PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
+    DoOutput(/*(*/") =\n\t\"\\tlwz\\t%s0,-%d(%s3)\\n\"\n",
+    PPCRegPrefix, ap->Bias-2, PPCRegPrefix);
+    if((ap->Flags != AMIPRAGFLAG_VARARGS) && (flags & FUNCFLAG_TAG))
+    {
+      DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",
+      PPCRegPrefix,3+k+1,PPCRegPrefix);
+    }
+    DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
+    "\t\"\\tblrl\";\n", PPCRegPrefix);
   }
   else
   {
+    int ofs = 4, fix = 0;
     DoOutput(/*(*/") =\n\t\"\\tlwz\\t%s11,100(%s2)\\n\"\n",
     PPCRegPrefix, PPCRegPrefix);
     k = 3;
     if(BaseName)
+    {
       DoOutput("\t\"\\tstw\\t%s%ld,56(%s2)\\n\"\n", PPCRegPrefix, k++,
       PPCRegPrefix);
-    if(flags & FUNCFLAG_TAG)
+    }
+    if(Flags2 & FLAG2_SHORTPPCVBCCINLINE)
+    {
+      ofs = 12;
+      if((i = ap->NumArgs+(BaseName?1:0)) <= 8)
+        fix = 8+1-i;
+    }
+    else if(flags & FUNCFLAG_TAG)
     {
       if((i = ap->NumArgs+(BaseName?1:0)) <= 8)
         k += 8+1-i;
@@ -6637,8 +6670,10 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
           PPCRegPrefix, 8+(k++-11)*4, PPCRegPrefix, PPCRegPrefix);
       }
       else
-        DoOutput("\t\"\\taddi\\t%s4,%s1,%ld\\n\"\n\t\"\\tstw\\t%s4,",
-        PPCRegPrefix, PPCRegPrefix, (2+k-11)*4, PPCRegPrefix);
+      {
+        DoOutput("\t\"\\taddi\\t%s%d,%s1,%ld\\n\"\n\t\"\\tstw\\t%s%d,",
+        PPCRegPrefix, ofs, PPCRegPrefix, (2+k+fix-11)*4, PPCRegPrefix, ofs);
+      }
       DoOutput("%d(%s2)\\n\"\n", 4*ap->Args[i].ArgReg, PPCRegPrefix);
     }
     DoOutput("\t\"\\tli\\t%s3,-%d\\n\"\n\t\"\\tblrl\";\n", PPCRegPrefix,
@@ -6666,10 +6701,13 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
     if(ap->NumArgs)
       DoOutput(", ");
   }
-  if(flags & FUNCFLAG_TAG && !(ap->Flags & AMIPRAGFLAG_MOSBASESYSV))
+  if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
   {
-    for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
-      DoOutput("0, ");
+    if(flags & FUNCFLAG_TAG && !(ap->Flags & AMIPRAGFLAG_MOSBASESYSV))
+    {
+      for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
+        DoOutput("0, ");
+    }
   }
   for(i = 0; i < k; ++i)
   {
@@ -7895,14 +7933,13 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
 
 uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 {
-  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16;
+  int32 i, j, k=0, size, nrcopyar = 0, stcksize = 16, basereg = 12;
   uint8 *data, *data2, *data3;
   struct ArHeader *arh;
 
   data = tempbuf;
 
-  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_FLOATARG|AMIPRAGFLAG_PPC
-  |AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_FLOATARG|AMIPRAGFLAG_PPC))
     return 1;
 
   Flags |= FLAG_DONE;
@@ -7933,14 +7970,57 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   data3 = data;
 
-  if(flags & FUNCFLAG_TAG)
+  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+  {
+    if(flags & FUNCFLAG_TAG)
+    {
+      /* mflr r0 = mfspr r0,8 = get link register */
+      EndPutM32Inc(data, 0x7C0802A6);
+      /* backchain to next frame: lwz r11,0(r1) */
+      EndPutM32Inc(data, 0x81610000);
+      /* difference = size of frame to copy: sub r12,r11,r1 = subf r12,r1,r11 */
+      EndPutM32Inc(data, 0x7D815850);
+      EndPutM32Inc(data, 0x90010004); /* stw r0,4(r1) */
+      EndPutM32Inc(data, 0x7D6C0850); /* sub r11,r1,r12 */
+      /* subi r11,r11,16 - r11 Start of new frame, +16 size */
+      EndPutM32Inc(data, 0x396BFFF0);
+      EndPutM32Inc(data, 0x902B0000); /* stw r1,0(r11) - Backchain to last frame */
+      EndPutM32Inc(data, 0x558CF0BE); /* srwi r12,r12,2 */
+      /* subi r0,r12,2 - size/4-2 = number of longwords to copy */
+      EndPutM32Inc(data, 0x380CFFFE);
+      EndPutM32Inc(data, 0x39810004); /* addi r12,r1,4 */
+      EndPutM32Inc(data, 0x7D615B78); /* mr r1,r11 - new stack frame */
+      EndPutM32Inc(data, 0x396B0008); /* addi r11,r11,8 */
+      EndPutM32Inc(data, 0x7C0903A6); /* mtctr r0 */
+      /* .l: lwzu r0,4(r12) - copy stack frame with offset 8 */
+      EndPutM32Inc(data, 0x840C0004);
+      EndPutM32Inc(data, 0x940B0004); /* stwu r0,4(r11) */
+      EndPutM32Inc(data, 0x4200FFF8); /* bdnz .l */
+      /* stw r10,8(r1) - last register into stack */
+      EndPutM32Inc(data, 0x91410008);
+    }
+    else if(ap->NumArgs >= 8)
+    {
+      stcksize = ((8 + (ap->NumArgs-7)*4 + 15) & (~15));
+      EndPutM32Inc(data, 0x7C0802A6);                /* mflr r0 */
+      EndPutM32Inc(data, 0x94220000 - stcksize);     /* stwu r1,-X(r1) */
+      EndPutM32Inc(data, 0x90010000 + stcksize + 4); /* stw r0,Y(r1) */
+    }
+    basereg = 3;
+  }
+  else if(flags & FUNCFLAG_TAG)
   {
     nrcopyar = ap->NumArgs > 8 ? 0 : 8 + 1 - ap->NumArgs;
     stcksize = (((nrcopyar + 2 + 3)&(~3))-nrcopyar)*4;
   }
 
-  EndPutM32Inc(data, 0x94210000+0x10000-(stcksize+nrcopyar*4)); /* stwu r1,-%d(r1) */
-  EndPutM32Inc(data, 0x7C0802A6);                               /* mflr r0 = mfspr r0,8 = get link register */
+  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+  || ap->NumArgs >= 8))
+  {
+    EndPutM32Inc(data, 0x94210000+0x10000-(stcksize+nrcopyar*4)); /* stwu r1,-%d(r1) */
+    /* mflr r0 = mfspr r0,8 = get link register */
+    EndPutM32Inc(data, 0x7C0802A6);
+  }
 
   if(nrcopyar)
   {
@@ -7960,6 +8040,45 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
       EndPutM32Inc(data, 0x90010000 + (i<<21) + (stcksize+4*(i-1+nrcopyar-8))); /* stw rX,Y(r1) */
   }
 
+  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+  {
+    if(flags & FUNCFLAG_TAG || ap->NumArgs >= 8)
+    {
+      for(i = ap->NumArgs-1; i; --i)
+      {
+        if(i < 7)
+        {
+          /* mr rX,rY */
+          EndPutM32Inc(data, 0x7C000378 + ((3+i)<<21) + ((3+i-1)<<16) + ((3+i-1)<<11));
+        }
+        else if(i == 7)
+        {
+          /* stw r10,8(r1) */
+          EndPutM32Inc(data, 0x91410008);
+        }
+        else
+        {
+          /* lwz r11,X(r1) */
+          EndPutM32Inc(data, 0x81610000 + (stcksize+((i-8)+3)*4));
+          EndPutM32Inc(data, 0x91620000 + ((i-8)+3)*4); /* stw r11,j(r1) */
+        }
+      }
+    }
+    else
+    {
+      /* shift all the arguments one field */
+      for(i = ap->NumArgs+3; i > 3; --i)
+      {
+        /* mr rX,rY */
+        EndPutM32Inc(data, 0x7C000378 + (i<<21) + ((i-1)<<16) + ((i-1)<<11));
+      }
+    }
+  }
+
+  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+  || ap->NumArgs >= 8))
+    EndPutM32Inc(data, 0x90010000+stcksize+4); /* stw r0,%d(r1) */
+
   if(BaseName)
   {
     if(Flags & FLAG_SMALLDATA)
@@ -7968,34 +8087,43 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
       EndPutM32Inc(data, 0x818D0000);                           /* lwz r12,BaseName@sdarx(r13) */
     }
     else
-    {
+   {
       k = (data-data3)+2;                                       /* store reloc offset */
       EndPutM32Inc(data, 0x3D800000);                           /* lis r12,BaseName@ha = addis r12,0,BaseName@ha */
       EndPutM32Inc(data, 0x818C0000);                           /* lwz r12,BaseName@l(r12) */
     }
   }
 
-  EndPutM32Inc(data, 0x90010000+stcksize+4);                    /* stw r0,%d(r1) */
-
-  for(i = 0; i < ap->NumArgs; ++i)
+  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
   {
-    j = 4*ap->Args[i].ArgReg;
-    if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
+    /* lwz r0,X(r3) */
+    EndPutM32Inc(data, 0x80040000 - (ap->Bias-2));
+    /* mtlr r0 = mtspr 8,r0 = restore link register */
+    EndPutM32Inc(data, 0x7C0803A6);
+    EndPutM32Inc(data, 0x4E800021); /* blrl = bclrl 20,0 */
+  }
+  else
+  {
+    for(i = 0; i < ap->NumArgs; ++i)
     {
-      if(i <= 7)
+      j = 4*ap->Args[i].ArgReg;
+      if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
       {
-        EndPutM32Inc(data, 0x90020000 + ((i+3)<<21) + j);       /* stw rX,j(r2) */
+        if(i <= 7)
+        {
+          EndPutM32Inc(data, 0x90020000 + ((i+3)<<21) + j);       /* stw rX,j(r2) */
+        }
+        else
+        {
+          EndPutM32Inc(data, 0x81610000 + (stcksize+(i+2-8)*4));  /* lwz r11,X(r1) = get data from stack */
+          EndPutM32Inc(data, 0x91620000 + j);                     /* stw r11,j(r1) */
+        }
       }
       else
       {
-        EndPutM32Inc(data, 0x81610000 + (stcksize+(i+2-8)*4));  /* lwz r11,X(r1) = get data from stack */
-        EndPutM32Inc(data, 0x91620000 + j);                     /* stw r11,j(r1) */
+        EndPutM32Inc(data, 0x38810000 + (stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0))); /* addi r4,r1,X */
+        EndPutM32Inc(data, 0x90820000 + j);                       /* stw r4,X(r2) */
       }
-    }
-    else
-    {
-      EndPutM32Inc(data, 0x38810000 + (stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0))); /* addi r4,r1,X */
-      EndPutM32Inc(data, 0x90820000 + j);                       /* stw r4,X(r2) */
     }
   }
 
@@ -8010,15 +8138,37 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   EndPutM32Inc(data, 0x7D6803A6);                               /* mtlr r11 = mtspr 8,r11 = restore link register */
   EndPutM32Inc(data, 0x4E800021);                               /* blrl = bclrl 20,0 */
 
-  if(flags & FUNCFLAG_TAG) /* Varargs. Rebuild the caller's stack-frame. */
+  if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
   {
     EndPutM32Inc(data, 0x81610000 + stcksize);                  /* lwz r11,X(r1) */
     EndPutM32Inc(data, 0x91610000 + (stcksize+nrcopyar*4));     /* stw r11,Y(r1) */
   }
 
-  EndPutM32Inc(data, 0x80010000 + stcksize+4);                  /* lwz r0,X(r1) */
-  EndPutM32Inc(data, 0x38210000 + (stcksize+nrcopyar*4));       /* addi r1,r1,Y */
-  EndPutM32Inc(data, 0x7C0803A6);                               /* mtlr r0 = mtspr 8,r0 = restore link register */
+  if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV) && ((flags & FUNCFLAG_TAG)
+  || ap->NumArgs >= 8))
+  {
+    if(ap->NumArgs >= 8)
+    {
+      EndPutM32Inc(data, 0x80010000 + stcksize+4); /* lwz r0,X(r1) */
+      EndPutM32Inc(data, 0x38210000 + stcksize);   /* addi r1,r1,Y */
+      /* mtlr r0 = mtspr 8,r0 = restore link register */
+      EndPutM32Inc(data, 0x7C0803A6);
+    }
+    else
+    {
+      /* restore old stack frame: lwz r1,0(r1) */
+      EndPutM32Inc(data, 0x80210000);
+      EndPutM32Inc(data, 0x80010004); /* lwz r0,4(r1) */
+      /* mtlr r0 = mtspr 8,r0 = restore link register */
+      EndPutM32Inc(data, 0x7C0803A6);
+    }
+  }
+  else
+  {
+    EndPutM32Inc(data, 0x80010000 + stcksize+4);                /* lwz r0,X(r1) */
+    EndPutM32Inc(data, 0x38210000 + (stcksize+nrcopyar*4));     /* addi r1,r1,Y */
+    EndPutM32Inc(data, 0x7C0803A6);                             /* mtlr r0 = mtspr 8,r0 = restore link register */
+  }
 
   EndPutM32Inc(data, 0x4E800020);                               /* blr = bclr 20,0 */
 
@@ -8918,7 +9068,7 @@ static uint32 PrintComment(struct Comment *com, strptr comment)
 static uint32 CallFunc(uint32 tagmode, strptr comment, FuncType Func)
 {
   struct Comment *com;
-  uint32 i;
+  int32 i;
   struct AmiPragma *ap;
 
   com = (struct Comment *) Comment.First;
@@ -9041,7 +9191,17 @@ static int32 AddClibEntry(strptr buffer, strptr bufend, uint32 linenum)
     buf = SkipBlanks(buf+4);
 
   if(!strnicmp(buf, "extern", 6))
-    buf = SkipBlanks(buf+6);
+  {
+    buf = SkipBlanksRet(buf+6);
+    if(!strnicmp(buf, "\"C\"", 3))  /* CPP: extern "C" */
+    {
+      buf = SkipBlanksRet(buf+3);
+      if (*buf == '{')
+      {
+        buf = SkipBlanksRet(buf+1);
+      }
+    }
+  }
 
   if(!GetCPPType(&d.ReturnType, buf, 1, 1))
   {
@@ -11187,8 +11347,12 @@ static uint32 CreateOS4PPC(uint32 callmode)
   "#include <exec/types.h>\n"
   "#include <exec/interfaces.h>\n"
   "#include <exec/emulation.h>\n"
-  "#include <interfaces/%s.h>\n"
-  "#include \"%s_vectors.c\"\n\n", ShortBaseName, ShortBaseName);
+  "#include <interfaces/exec.h>\n");
+  
+  if(!stricmp("exec",ShortBaseName))
+    DoOutput("#include <interfaces/%s.h>\n", ShortBaseName);
+
+  DoOutput("#include \"%s_vectors.c\"\n\n", ShortBaseName);
 
   CallFunc(callmode, "\n/%s */\n\n", FuncOS4PPC);
 
@@ -11208,6 +11372,8 @@ static uint32 CreateOS4PPC(uint32 callmode)
   "static void InitFunction(APTR dummy, ULONG SegList, "
    "struct ExecBase *ExecBase)\n{\n"
   "  struct Library *LibBase;\n"
+  "  struct ExecIFace *IExec = (struct ExecIFace *)"
+   "ExecBase->MainInterface;\n"
   "  if((LibBase = IExec->OpenLibrary(LIBNAME, LIBVERSION)))\n"
   "  {\n"
   "    struct Interface *NewInterface;\n"
@@ -11217,8 +11383,6 @@ static uint32 CreateOS4PPC(uint32 callmode)
   "      MIT_Name,        IFACENAME,\n"
   "      TAG_DONE)))\n"
   "    {\n"
-  "      struct ExecIFace *IExec = (struct ExecIFace *)"
-   "ExecBase->MainInterface;\n"
   "      NewInterface->Data.IExecPrivate = (APTR)IExec;\n"
   "      IExec->AddInterface(LibBase, NewInterface);\n"
   "    }\n"
@@ -11226,8 +11390,8 @@ static uint32 CreateOS4PPC(uint32 callmode)
   "}\n\n"
   "volatile static struct Resident MyResident =\n{\n"
   "  RTC_MATCHWORD,\n"
-  "  &MyResident,\n"
-  "  &MyResident+1,\n"
+  "  (struct Resident *)&MyResident,\n"
+  "  (APTR)(&MyResident+1),\n"
   "  RTF_NATIVE,\n"
   "  LIBVERSION,\n"
   "  NT_UNKNOWN,\n"
@@ -11241,7 +11405,7 @@ static uint32 CreateOS4PPC(uint32 callmode)
   "\n}\n");
 }
 
-static uint32 CreateOS4M68K(uint32 callmode)
+static uint32 CreateOS4M68K(void)
 {
   if(Flags2 & FLAG2_AUTOHEADER) DoOutput("/* %s */\n\n", AUTOHEADERTEXT);
 
@@ -12091,6 +12255,7 @@ static const strptr helptext =
 "       120 - VBCC auto libopen files (C source)\n"
 "       121 - VBCC auto libopen files (m68k link library)\n"
 "       122 - VBCC MorphOS inline files\n"
+"       123 - VBCC new MorphOS inline files\n"
 "       130 - GCC inline files for MorphOS (preprocessor based)\n"
 "       131 - GCC inline files for MorphOS (old type - inline based)\n"
 "       132 - GCC inline files for MorphOS (library stubs)\n"
@@ -12404,6 +12569,7 @@ static const strptr helptext =
 "       120 - VBCC auto libopen files (C source)\n"
 "       121 - VBCC auto libopen files (m68k link library)\n"
 "       122 - VBCC MorphOS inline files\n"
+"       123 - VBCC new MorphOS inline files\n"
 "       130 - GCC inline files for MorphOS (preprocessor based)\n"
 "       131 - GCC inline files for MorphOS (old type - inline based)\n"
 "       132 - GCC inline files for MorphOS (library stubs)\n"
@@ -13002,6 +13168,7 @@ int main(int argc, char **argv)
       case 121: mode = MODUS_GENAUTO+(args.special-120);
         sprintf(filename, "%s_autoopenlib.lib", ShortBaseName);
         break;
+      case 123: Flags2 |= FLAG2_SHORTPPCVBCCINLINE; /* no break */
       case 122: mode = MODUS_VBCCMORPHINLINE;
         PPCRegPrefix = ""; /* no "r" allowed */
         sprintf(filename, "%s_protos.h", ShortBaseName);
@@ -13116,7 +13283,7 @@ int main(int argc, char **argv)
     else if(mode == MODUS_OS4_PPCSTUBS)
       mode = CreateOS4PPC(callmode);
     else if(mode == MODUS_OS4_68KSTUBS)
-      mode = CreateOS4M68K(callmode);
+      mode = CreateOS4M68K();
     else if(mode == MODUS_GATESTUBS)
       mode = CreateGateStubs(callmode);
     else if(mode == MODUS_SFD)

@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.184 (07.02.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.185 (08.02.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -291,6 +291,11 @@ static const char version[] =
  2.184 07.02.05 : (phx) Fixed FuncVBCCWOSCode() (special 73) to read the
         function ptr from (bias-2) instead from (bias) for PPC0/2-ABI.
         Picasso96 support.
+ 2.185 08.02.05 : (phx) Special 38 (proto with vbcc inline) always generates
+        an inline-include now, and is no longer restricted to MorphOS & 68k.
+        Special Warp3DPPC support.
+        Marked some powerpc.library functions, which were erroneously
+        detected as tag functions.
 */
 
 /* A short note, how fd2pragma works.
@@ -1652,6 +1657,7 @@ static const struct Proto_LibType Proto_LibTypes[] = {
 {"MC68040Base",           0,                "68040.library",       "mc68040"},
 {"MC680x0Base",           0,                "680x0.library",       "mc680x0"},
 {"P96Base",               0,                "Picasso96API.library","Picasso96"},
+{"Warp3DPPCBase",         0,                "Warp3DPPC.library"   ,"Warp3D"},
 {0, 0, 0, 0},
 };
 
@@ -1676,6 +1682,11 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {"NewPPCStackSwap",             0},
 {"SDL_MapRGBA",                 0},
 {"SDL_GetRGBA",                 0},
+{"FindTagItemPPC",              0},
+{"GetTagDataPPC",               0},
+{"GetInfo",                     0},
+{"GetHALInfo",                  0},
+{"SetScheduling",               0},
 {0,0},
 };
 
@@ -10371,8 +10382,8 @@ static uint32 CreateProtoFile(uint32 Type)
       if(Type != 7)
       {
         if(Type == 9)
-          DoOutput("#elif defined(" TEXT_VBCC ")\n#if defined(__MORPHOS__) || !defined(__PPC__)\n"
-          "#include <inline/%s_protos.h>\n#endif\n#else", ShortBaseName);
+          DoOutput("#elif defined(" TEXT_VBCC ")\n"
+          "#include <inline/%s_protos.h>\n#else", ShortBaseName);
         else
           DoOutput("#elif !defined(" TEXT_VBCC ")");
       }

@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.179 (09.11.2004) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.180 (07.12.2004) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -280,6 +280,8 @@ static const char version[] =
  2.177 23.09.04 : minor bugfix
  2.178 09.10.04 : (phx) vbcc: use __linearvarargs instead of __aos4varargs
  2.179 09.11.04 : (phx) make it compile natively under AmigaOS 4.x
+ 2.180 07.12.04 : (phx) don't create vbcc inlines for MUI_NewObject &
+        PM_MakeItem - otherwise the preprocessor gets confused
 */
 
 /* A short note, how fd2pragma works.
@@ -6325,6 +6327,8 @@ uint32 FuncVBCCInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
+    if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
+      return 1;    /* do not create MUI_NewObject */
     DoOutput("#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && "
     "(__STDC_VERSION__ >= 199901L)\n");
   }
@@ -6568,6 +6572,8 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
+    if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
+      return 1;    /* do not create MUI_NewObject */
     DoOutput("#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && "
     "(__STDC_VERSION__ >= 199901L)\n");
   }

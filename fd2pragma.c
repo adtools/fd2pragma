@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.186 (17.02.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.187 (26.03.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -297,6 +297,17 @@ static const char version[] =
         Marked some powerpc.library functions, which were erroneously
         detected as tag functions.
  2.186 17.02.05 : fixed PPC0-mode VBCC WOS stubs
+ 2.187 26.03.05 : (phx) "(sysv,r12base)" in MorphOS FD-files is supported.
+        I made it identical to (sysv), which both load the library base
+        to r12 (correct in (sysv,r12base) mode and can't hurt in (sysv) mode).
+        Allow "(void)" instead of "()" as parameter list.
+        Function-pointer types can extend over multiple lines now (does
+        this make sense for other types too?).
+        New SDL-types: FPSmanager, Mix_Chunk, Mix_Music, Mix_MusicType,
+        Mix_EffectFunc_t, Mix_EffectDone_t, Mix_Fading, IPaddress,
+        TCPsocket, UDPpacket, UDPsocket, SDLNet_SocketSet,
+        SDLNet_GenericSocket, TTF_Font.
+        Put some of SDL-gfx functions ("...RGBA()") in the exceptions list.
 */
 
 /* A short note, how fd2pragma works.
@@ -589,8 +600,11 @@ struct ShortListRoot {
 #define AMIPRAGFLAG_M68K         (1<<14) /* This is an M68K function */
 #define AMIPRAGFLAG_OWNTAGFUNC   (1<<15) /* MakeTagFunction create tag */
 #define AMIPRAGFLAG_MOSSYSV      (1<<16) /* MorphOS(sysv) type */
-#define AMIPRAGFLAG_MOSBASESYSV  (1<<17) /* MorphOS(base,sysv) type */
-#define AMIPRAGFLAG_VARARGS      (1<<18) /* last argument is ... */
+#define AMIPRAGFLAG_MOSSYSVR12   (1<<17) /* MorphOS(sysv,r12base) type */
+#define AMIPRAGFLAG_MOSBASESYSV  (1<<18) /* MorphOS(base,sysv) type */
+#define AMIPRAGFLAG_VARARGS      (1<<19) /* last argument is ... */
+
+#define AMIPRAGFLAG_MOS_ALL      (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12|AMIPRAGFLAG_MOSBASESYSV)
 
 struct AmiArgs {
   strptr                         ArgName;
@@ -1519,6 +1533,8 @@ static uint8 InternalTypes[] = {
 "Sint16:signed short\n"
 "Uint32:unsigned long\n"
 "Sint32:signed long\n"
+"Uint64:unsigned long long\n"
+"Sint64:signed long long\n"
 "SDL_version:struct !\n"
 "SDL_RWops:struct SDL_RWops\n"
 "SDL_Rect:struct !\n"
@@ -1569,6 +1585,20 @@ static uint8 InternalTypes[] = {
 "SDL_NewTimerCallback:unsigned long (*)(unsigned long,void *)\n"
 "SDL_TimerID:struct _SDL_TimerID\n"
 "SDL_errorcode:enum ?\n"
+"FPSmanager:struct !\n"
+"Mix_Chunk:struct !\n"
+"Mix_Music:struct !\n"
+"Mix_MusicType:enum ?\n"
+"Mix_EffectFunc_t:void (*)(int,void *,int,void *)\n"
+"Mix_EffectDone_t:void (*)(int,void *)\n"
+"Mix_Fading:enum ?\n"
+"IPaddress:struct !\n"
+"TCPsocket:void *\n"
+"UDPpacket:struct !\n"
+"UDPsocket:void *\n"
+"SDLNet_SocketSet:void *\n"
+"SDLNet_GenericSocket:void *\n"
+"TTF_Font:struct !\n"
 };
 
 static const struct CPP_TypeField CPP_Field[] = {
@@ -1683,6 +1713,30 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {"NewPPCStackSwap",             0},
 {"SDL_MapRGBA",                 0},
 {"SDL_GetRGBA",                 0},
+{"pixelRGBA",                   0},
+{"hlineRGBA",                   0},
+{"vlineRGBA",                   0},
+{"rectangleRGBA",               0},
+{"boxRGBA",                     0},
+{"lineRGBA",                    0},
+{"aalineRGBA",                  0},
+{"circleRGBA",                  0},
+{"aacircleRGBA",                0},
+{"filledCircleRGBA",            0},
+{"ellipseRGBA",                 0},
+{"aaellipseRGBA",               0},
+{"filledEllipseRGBA",           0},
+{"pieRGBA",                     0},
+{"filledPieRGBA",               0},
+{"trigonRGBA",                  0},
+{"aatrigonRGBA",                0},
+{"filledTrigonRGBA",            0},
+{"polygonRGBA",                 0},
+{"aapolygonRGBA",               0},
+{"filledPolygonRGBA",           0},
+{"bezierRGBA",                  0},
+{"characterRGBA",               0},
+{"stringRGBA",                  0},
 {"FindTagItemPPC",              0},
 {"GetTagDataPPC",               0},
 {"GetInfo",                     0},
@@ -3371,6 +3425,15 @@ static uint32 ScanFDFile(void)
           DoError(ERR_TO_MUCH_ARGUMENTS, linenum); break;
         }
 
+        if(!strncmp(in.pos, "void", 4))
+        {
+          /* allows "(void)" instead of ()" */
+          in.pos = SkipBlanks(in.pos + 4);
+          if(*in.pos != /*(*/')')
+            DoError(ERR_EXPECTED_CLOSE_BRACKET, linenum);
+          break;
+        }
+
         if(!strncmp(in.pos, "...", 3))
         {
           ap.Flags = AMIPRAGFLAG_VARARGS;
@@ -3450,7 +3513,6 @@ static uint32 ScanFDFile(void)
             if(*in.pos == /*(*/')' && !ap.NumArgs)
               break;
 
-            /* MorphOS V.4 with base in r3: (base,sysv) */
             if(!strncmp(in.pos, "base", 4))
             {
               in.pos = SkipBlanks(in.pos + 4);
@@ -3459,6 +3521,7 @@ static uint32 ScanFDFile(void)
                 in.pos = SkipBlanks(in.pos + 1);
                 if(!strncmp(in.pos, "sysv",4))
                 {
+                  /* MorphOS V.4 with base in r3: (base,sysv) */
                   ap.Flags |= AMIPRAGFLAG_MOSBASESYSV;
                   ap.NumArgs = ap.CallArgs;
                   in.pos = SkipBlanks(in.pos + 4);
@@ -3468,15 +3531,35 @@ static uint32 ScanFDFile(void)
                 }
               }
             }
-            /* MorphOS V.4 without passing base: (sysv) */
             else if(!strncmp(in.pos, "sysv", 4))
             {
-              ap.Flags |= AMIPRAGFLAG_MOSSYSV;
-              ap.NumArgs = ap.CallArgs;
               in.pos = SkipBlanks(in.pos + 4);
-              if(*in.pos != /*(*/')')
+              if(*in.pos == ',')
+              {
+                in.pos = SkipBlanks(in.pos + 1);
+                if(!strncmp(in.pos, "r12base",7))
+                {
+                  /* MorphOS V.4 without passing base: (sysv) */
+                  ap.Flags |= AMIPRAGFLAG_MOSSYSVR12;
+                  ap.NumArgs = ap.CallArgs;
+                  in.pos = SkipBlanks(in.pos + 7);
+                  if(*in.pos != /*(*/')')
+                    DoError(ERR_EXPECTED_CLOSE_BRACKET, linenum);
+                  break;
+                }
+              }
+              else if (*in.pos == /*(*/')')
+              {
+                /* MorphOS V.4 without passing base: (sysv) */
+                ap.Flags |= AMIPRAGFLAG_MOSSYSV;
+                ap.NumArgs = ap.CallArgs;
+                break;
+              }
+              else
+              {
                 DoError(ERR_EXPECTED_CLOSE_BRACKET, linenum);
-              break;
+                break;
+              }
             }
 
             in.pos = SkipName(oldptr);
@@ -6664,7 +6747,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   DoOutput(" __%s("/*)*/, name);
 
-  if(BaseName)
+  if(BaseName && !(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12)))
   {
     DoOutput("%s", GetBaseType());
     if(ap->NumArgs)
@@ -6674,7 +6757,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
   if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
   {
     if((flags & FUNCFLAG_TAG) &&
-       !(ap->Flags & (AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV)))
+       !(ap->Flags & AMIPRAGFLAG_MOS_ALL))
     {
       for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
         DoOutput("long, ");
@@ -6693,7 +6776,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
   {
     if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
     {
-      if((ap->Flags & (AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+      if((ap->Flags & AMIPRAGFLAG_MOS_ALL)
       && !(ap->Flags & AMIPRAGFLAG_VARARGS))
       {
         for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
@@ -6721,20 +6804,20 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
     "\t\"\\tblrl\";\n", PPCRegPrefix);
   }
-  else if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
+  else if(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12))
   {
     if (BaseName)
     {
-      DoOutput(/*(*/") =\n\t\"\\tlis\\t%s12,%s@ha\\n\"\n"
-               "\t\"\\tlwz\\t%s11,%s@l(%s12)\\n\"\n"
-               "\t\"\\tlwz\\t%s0,-%d(%s11)\\n\"\n",
+      DoOutput(/*(*/") =\n\t\"\\tlis\\t%s11,%s@ha\\n\"\n"
+               "\t\"\\tlwz\\t%s12,%s@l(%s11)\\n\"\n"
+               "\t\"\\tlwz\\t%s0,-%d(%s12)\\n\"\n",
                PPCRegPrefix, BaseName,
                PPCRegPrefix, BaseName, PPCRegPrefix,
                PPCRegPrefix, ap->Bias-2, PPCRegPrefix);
     }
     if((ap->Flags != AMIPRAGFLAG_VARARGS) && (flags & FUNCFLAG_TAG))
     {
-      DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",  /* @@@ */
+      DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",
       PPCRegPrefix,3+k+1,PPCRegPrefix);
     }
     DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
@@ -6800,7 +6883,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("...");
   }
   DoOutput(/*(*/") __%s("/*)*/, name);
-  if(BaseName && !(ap->Flags & AMIPRAGFLAG_MOSSYSV))
+  if(BaseName && !(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12)))
   {
     DoOutput("%s", BaseName);
     if(ap->NumArgs)
@@ -7858,17 +7941,17 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t.global %s\n", BaseName);
   DoOutput("\t.global %s\n\t.align\t4\n%s:\n",name, name);
 
-  if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
+  if(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12))
   {
     if(Flags & FLAG_SMALLDATA)
-      DoOutput("\tlwz\t%s11,%s@sdarx(%s13)\n",
+      DoOutput("\tlwz\t%s12,%s@sdarx(%s13)\n",
                PPCRegPrefix, BaseName, PPCRegPrefix);
     else
-      DoOutput("\tlis\t%s12,%s@ha\n"
-               "\tlwz\t%s11,%s@l(%s12)\n",
+      DoOutput("\tlis\t%s11,%s@ha\n"
+               "\tlwz\t%s12,%s@l(%s11)\n",
                PPCRegPrefix, BaseName, PPCRegPrefix, BaseName, PPCRegPrefix);
 
-    DoOutput("\tlwz\t%s0,-%d(%s11)\n\tmtctr\t%s0\n\tbctr\n",
+    DoOutput("\tlwz\t%s0,-%d(%s12)\n\tmtctr\t%s0\n\tbctr\n",
              PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
   }
 
@@ -8120,18 +8203,18 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   data3 = data;
 
-  if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
+  if(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12))
   {
     if(Flags & FLAG_SMALLDATA)
     {
       k = (data-data3)+2;                                       /* store reloc offset */
-      EndPutM32Inc(data, 0x816D0000);                           /* lwz r11,BaseName@sdarx(r13) */
+      EndPutM32Inc(data, 0x818D0000);                           /* lwz r12,BaseName@sdarx(r13) */
     }
     else
     {
       k = (data-data3)+2;                                       /* store reloc offset */
-      EndPutM32Inc(data, 0x3D800000);                           /* lis r12,BaseName@ha = addis r12,0,BaseName@ha */
-      EndPutM32Inc(data, 0x816C0000);                           /* lwz r11,BaseName@l(r12) */
+      EndPutM32Inc(data, 0x3D600000);                           /* lis r11,BaseName@ha = addis r11,0,BaseName@ha */
+      EndPutM32Inc(data, 0x818B0000);                           /* lwz r12,BaseName@l(r11) */
     }
 
     EndPutM32Inc(data, 0x800c0000 - (ap->Bias-2));
@@ -8754,7 +8837,7 @@ uint32 FuncOS4PPC(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int32 i, noret = 0, registers;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOS_ALL))
     return 1;
 
   Flags |= FLAG_DONE; /* We did something */
@@ -8869,7 +8952,7 @@ uint32 FuncOS4M68KCSTUB(struct AmiPragma *ap, uint32 flags, strptr name)
   if(ap->NumArgs <= 7)
     return 1;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOS_ALL))
     return 1;
 
   if(!(cd = GetClibFunc(ap->FuncName, ap, flags)))
@@ -8910,7 +8993,7 @@ uint32 FuncOS4M68K(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int i;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOS_ALL))
     return 1;
 
   if(!(cd = GetClibFunc(ap->FuncName, ap, flags)))
@@ -9021,7 +9104,7 @@ uint32 FuncOS4M68K(struct AmiPragma *ap, uint32 flags, strptr name)
 
 uint32 FuncOS4M68KVect(struct AmiPragma *ap, uint32 flags, strptr name)
 {
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOS_ALL))
     return 1;
 
   while(LastBias + BIAS_OFFSET < ap->Bias)
@@ -9039,7 +9122,7 @@ uint32 FuncXML(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int32 i;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOS_ALL))
     return 1;
 
   if(flags & FUNCFLAG_ALIAS)
@@ -9345,10 +9428,10 @@ static int32 AddClibEntry(strptr buffer, strptr bufend, uint32 linenum)
 
   memset(&d, 0, sizeof(struct ClibData));
   buf = SkipBlanksRet(buf);
-  if(*buf == '#') /* preprozessor lines */
+  if(*buf == '#') /* preprocessor lines */
   {
 #ifdef DEBUG_OLD
-  printf("Found non-function bracket in preprozessor line %ld\n", linenum);
+  printf("Found non-function bracket in preprocessor line %ld\n", linenum);
 #endif
     while(buf < bufend && *buf != '\n')
       ++buf;
@@ -9389,7 +9472,7 @@ static int32 AddClibEntry(strptr buffer, strptr bufend, uint32 linenum)
     strptr r = d.ReturnType.TypeStart;
     while(*r != '('/*)*/) ++r;
     r = SkipBlanks(++r); /* the bracket */
-    d.FuncName = SkipBlanks(++r); /* the asterix */
+    d.FuncName = SkipBlanks(++r); /* the asterisk */
   }
   else
     d.FuncName = SkipBlanks(d.ReturnType.TypeStart+d.ReturnType.FullLength);
@@ -9865,22 +9948,22 @@ static int32 GetCPPType(struct CPP_NameType *data, strptr start, uint32 rettype,
   if(*u == '('/*)*/)
   {
     ok = 0;
-    u = SkipBlanks(++u);
+    u = SkipBlanksRet(++u);
     if(*u == '*')
     {
       while(*u == '*')
       {
         ++data->FuncPointerDepth; ++u;
       }
-      u = SkipBlanks(u);
+      u = SkipBlanksRet(u);
       if(CheckKeyword(u, "const", 5) || CheckKeyword(u, "CONST", 5))
       {
         data->Flags |= CPP_FLAG_CONST; u += 6;
       }
-      u = SkipBlanks(u);
+      u = SkipBlanksRet(u);
       if(*u != /*(*/')')
         data->FunctionName = u;
-      u = SkipBlanks(SkipName(u));
+      u = SkipBlanksRet(SkipName(u));
       if(*u == '('/*)*/)
       {
         int numclose = 1;
@@ -9894,7 +9977,7 @@ static int32 GetCPPType(struct CPP_NameType *data, strptr start, uint32 rettype,
       }
       if(*u == /*(*/')')
       {
-        u = SkipBlanks(++u);
+        u = SkipBlanksRet(++u);
         if(*u == '('/*)*/)
         {
           data->Flags |= CPP_FLAG_FUNCTION;

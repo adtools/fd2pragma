@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.183 (24.01.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.184 (07.02.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -288,6 +288,9 @@ static const char version[] =
         need a base-register passed as first argument
  2.183 24.01.05 : added support for long long types, nevertheless files using
         that will not produce correct results for now
+ 2.184 07.02.05 : (phx) Fixed FuncVBCCWOSCode() (special 73) to read the
+        function ptr from (bias-2) instead from (bias) for PPC0/2-ABI.
+        Picasso96 support.
 */
 
 /* A short note, how fd2pragma works.
@@ -1648,6 +1651,7 @@ static const struct Proto_LibType Proto_LibTypes[] = {
 {"MC68060Base",           0,                "68060.library",       "mc68060"},
 {"MC68040Base",           0,                "68040.library",       "mc68040"},
 {"MC680x0Base",           0,                "680x0.library",       "mc680x0"},
+{"P96Base",               0,                "Picasso96API.library","Picasso96"},
 {0, 0, 0, 0},
 };
 
@@ -7104,7 +7108,7 @@ uint32 FuncVBCCWOSCode(struct AmiPragma *ap, uint32 flags, strptr name)
     EndPutM32Inc(data, 0x90010010);             /* stw r0,16(r1) */
     basepos = data;
     EndPutM32Inc(data, 0x80420000);             /* lwz r2,BaseName(r2) */
-    EndPutM32Inc(data, 0x80030000 - ap->Bias);  /* lwz r0,-ap->Bias(r2) */
+    EndPutM32Inc(data, 0x80030000-(ap->Bias-2));/* lwz r0,-ap->Bias-2(r2) */
     /* mtlr r0 = mtspr 8,r0 = restore link register */
     EndPutM32Inc(data, 0x7C0803A6);
     EndPutM32Inc(data, 0x4E800021);             /* blrl = bclrl 20,0 = jump */
@@ -7118,7 +7122,7 @@ uint32 FuncVBCCWOSCode(struct AmiPragma *ap, uint32 flags, strptr name)
   {
     basepos = data;
     EndPutM32Inc(data, 0x81620000);             /* lwz r11,BaseName(r2) */
-    EndPutM32Inc(data, 0x800C0000 - ap->Bias);  /* lwz r0,-ap->Bias(r11) */
+    EndPutM32Inc(data, 0x800C0000-(ap->Bias-2));/* lwz r0,-ap->Bias-2(r11) */
     EndPutM32Inc(data, 0x7C0803A6);             /* mtlr r0 = mtspr 8,r0 = store link register */
     EndPutM32Inc(data, 0x4E800021);             /* blrl = bclrl 20,0 = jump */
   }

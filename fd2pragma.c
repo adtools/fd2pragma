@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.182 (16.01.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.183 (24.01.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -286,6 +286,8 @@ static const char version[] =
         containing the names - allows easier expansion
  2.182 16.01.05 : (phx) experimental MorphOS "(sysv)" support, which doesn't
         need a base-register passed as first argument
+ 2.183 24.01.05 : added support for long long types, nevertheless files using
+        that will not produce correct results for now
 */
 
 /* A short note, how fd2pragma works.
@@ -641,17 +643,22 @@ struct FDData {
   uint8  ArgReg[MAXREG];
 };
 
+/* NOTE: string creation for CPP-Functions probably does not work at all
+at the moment, as every compiler uses different systems which seem to
+change constantly. */
+
 /* These CPP types match the strings used for CPP name creation. The
 defines are used both for name creation and type specification. */
 #define CPP_TYPE_VOID           'v'     /* void,   VOID    */
 #define CPP_TYPE_BYTE           'c'     /* char,   int8    */
-#define CPP_TYPE_WORD           's'     /* short,  int16    */
-#define CPP_TYPE_LONG           'j'     /* long,   int32    */
+#define CPP_TYPE_WORD           's'     /* short,  int16   */
+#define CPP_TYPE_LONG           'j'     /* long,   int32   */
 #define CPP_TYPE_FLOAT          'f'     /* float,  FLOAT   */
 #define CPP_TYPE_DOUBLE         'd'     /* double, DOUBLE  */
 #define CPP_TYPE_INT            'i'     /* int */
 #define CPP_TYPE_STRUCTURE      0
 #define CPP_TYPE_VARARGS        'e'
+#define CPP_TYPE_LONGLONG       'l'     /* long long, int64 */
 
 /* These types are for string creation only. */
 #define CPP_TYPE_ENUM           'E'
@@ -675,6 +682,7 @@ defines are used both for name creation and type specification. */
 #define CPP_FLAG_REGISTER       (1<<9) /* argument is register type */
 #define CPP_FLAG_TYPEDEFNAME    (1<<10) /* name is created from typedef */
 #define CPP_FLAG_ARRAY          (1<<11) /* this type is an array */
+#define CPP_FLAG_LONG           (1<<12) /* type is long */
 /* STRPTR is defined different under C and CPP -> I have to create two
 names, one time unsigned char *, one time signed char *, when somewhere
 a STRPTR occurs */
@@ -1315,6 +1323,7 @@ static uint8 InternalTypes[] = {
 "va_list:char *\n"
 "time_t:long\n"
 "size_t:unsigned int\n"
+"FILE:struct ? *\n"
 "uint8:unsigned char\n"
 "uint16:unsigned short\n"
 "uint32:unsigned long\n"
@@ -1550,11 +1559,13 @@ static uint8 InternalTypes[] = {
 "SDL_TimerCallback:unsigned long (*)(unsigned long)\n"
 "SDL_NewTimerCallback:unsigned long (*)(unsigned long,void *)\n"
 "SDL_TimerID:struct _SDL_TimerID\n"
+"SDL_errorcode:enum ?\n"
 };
 
 static const struct CPP_TypeField CPP_Field[] = {
 {"int",         3, 0,                                  CPP_TYPE_INT},
-{"long",        4, 0,                                  CPP_TYPE_LONG},
+/* long needs special handling due to the fact it is a modifier and a type */
+/*{"long",        4, 0,                                  CPP_TYPE_LONG}, */
 {"LONG",        4, 0,                                  CPP_TYPE_LONG},
 {"BPTR",        4, 0,                                  CPP_TYPE_LONG},
 {"BSTR",        4, 0,                                  CPP_TYPE_LONG},
@@ -9622,21 +9633,30 @@ static int32 GetCPPType(struct CPP_NameType *data, strptr start, uint32 rettype,
     }
     if(CheckKeyword(start, "const", 5) || CheckKeyword(start, "CONST", 5))
     {
-      data->Flags |= CPP_FLAG_CONST; start += 6;
+      data->Flags |= CPP_FLAG_CONST; start += 5;
     }
     else if(rettype && CheckKeyword(start, "extern", 6))
     {
-      start += 7; /* ignore it */
+      start += 6; /* ignore it */
+    }
+    else if(CheckKeyword(start, "long", 4))
+    {
+      if(data->Flags & CPP_FLAG_LONG)
+        data->Type = CPP_TYPE_LONGLONG;
+      else
+        data->Flags |= CPP_FLAG_LONG;
+      
+      start += 4;
     }
     else if(CheckKeyword(start, "signed", 6))
-      start += 7;
+      start += 6;
     else if(CheckKeyword(start, "unsigned", 8))
     {
-      data->Flags |= CPP_FLAG_UNSIGNED; start += 9;
+      data->Flags |= CPP_FLAG_UNSIGNED; start += 8;
     }
     else if(CheckKeyword(start, "register", 8))
     {
-      data->Flags |= CPP_FLAG_REGISTER; start += 9;
+      data->Flags |= CPP_FLAG_REGISTER; start += 8;
       data->Register = UNDEFREGISTER;
     }
     else if(CheckKeyword(start, "struct", 6))
@@ -9863,6 +9883,9 @@ static int32 GetCPPType(struct CPP_NameType *data, strptr start, uint32 rettype,
       }
     }
   }
+
+  if(!data->Type && (data->Flags & CPP_FLAG_LONG))
+    data->Type = CPP_TYPE_LONG;
 
   if((!data->Type && !data->Flags) || !ok)
     return 0;

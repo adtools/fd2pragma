@@ -1688,6 +1688,10 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {"GetInfo",                     0},
 {"GetHALInfo",                  0},
 {"SetScheduling",               0},
+{"W3D_CreateContext",           "W3D_CreateContextTags"},
+{"W3D_RequestMode",             "W3D_RequestModeTags"},
+{"W3D_AllocTexObj",             "W3D_AllocTexObjTags"},
+{"W3D_BestModeID",              "W3D_BestModeIDTags"},
 {0,0},
 };
 

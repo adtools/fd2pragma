@@ -1,5 +1,5 @@
 static const char version[] =
-"$VER: fd2pragma 2.177 (23.09.2004) by Dirk Stoecker <stoecker@epost.de>";
+"$VER: fd2pragma 2.177 (23.09.2004) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */

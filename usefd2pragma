@@ -1,4 +1,4 @@
-; $VER: usefd2pragma 1.8 (28.07.2001) (Freeware) by Dirk Stöcker <stoecker@epost.de>
+; $VER: usefd2pragma 1.8 (28.07.2001) (Freeware) by Dirk Stöcker <doc@dstoecker.de>
 ; ToDo: Lots of options need to be disabled for types >10
 ; MorphOS stuff, CLIB, SFD, FD targets (>= 130) missing
 

@@ -1,5 +1,5 @@
 static const char version[] =
-"$VER: fd2pragma 2.177 (23.09.2004) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.178 (09.10.2004) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -277,6 +277,7 @@ static const char version[] =
         result of my modifications in 2.172.
  2.176 21.09.04 : added new MorphOS VBCC inlines and some other OS4 fixes
  2.177 23.09.04 : minor bugfix
+ 2.178 09.10.04 : (phx) vbcc: use __linearvarargs instead of __aos4varargs
 */
 
 /* A short note, how fd2pragma works.
@@ -6575,7 +6576,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   OutClibType(&cd->ReturnType, 0);
   if((flags & FUNCFLAG_TAG) && (Flags2 & FLAG2_SHORTPPCVBCCINLINE))
-    DoOutput(" __aos4varargs");
+    DoOutput(" __linearvarargs");
 
   DoOutput(" __%s("/*)*/, name);
 

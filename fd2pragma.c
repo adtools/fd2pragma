@@ -1,5 +1,6 @@
+/* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.179 (09.11.2004) by Dirk Stoecker <stoecker@epost.de>";
+"$VER: fd2pragma 2.179 (09.11.2004) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -10944,9 +10945,9 @@ static uint32 CreateSFD(uint32 callmode)
     t = time(&t);
     tim = localtime(&t);
  
-    DoOutput("==id $Id$\n", filename,
-    tim->tm_year+1900, tim->tm_mon+1, tim->tm_mday, tim->tm_hour, tim->tm_min,
-    tim->tm_sec);
+    DoOutput("==id %cId: %s,v 1.0 %04d/%02d/%02d %02d:%02d:%02d "
+    "noname Exp $\n", '$', filename, tim->tm_year+1900, tim->tm_mon+1,
+    tim->tm_mday, tim->tm_hour, tim->tm_min, tim->tm_sec);
   }
 
   if(BaseName)

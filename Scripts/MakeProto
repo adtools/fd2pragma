@@ -1,0 +1,87 @@
+.key FDPATH/A,PROTOPATH/A
+.bra {
+.ket }
+
+; $VER: MakeProto 1.3 (13.11.1999)
+; script to create all the needed proto files with fd2pragma
+; FDPATH must end in / or :
+; PROTOPATH must already exist and should be empty
+
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}amigaguide_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}aml_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}arexx_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}asl_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}battclock_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}battmem_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}bevel_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}bitmap_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}bullet_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}button_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}cardres_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}checkbox_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}chooser_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}cia_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}clicktab_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}colorwheel_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}commodities_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}console_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}datatypes_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}datebrowser_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}diskfont_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}disk_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}dos_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}drawlist_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}dtclass_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}exec_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}expansion_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}fuelgauge_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}gadtools_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}getfile_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}getfont_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}getscreenmode_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}glyph_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}graphics_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}hdwrench_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}icon_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}iffparse_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}input_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}integer_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}intuition_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}keymap_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}label_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}layers_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}layout_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}listbrowser_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}locale_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}lowlevel_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathffp_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathieeedoubbas_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathieeedoubtrans_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathieeesingbas_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathieeesingtrans_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}mathtrans_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}misc_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}nonvolatile_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}palette_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}penmap_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}popcycle_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}potgo_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}radiobutton_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}ramdrive_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}realtime_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}requester_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}resource_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}rexxsyslib_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}scroller_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}slider_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}space_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}speedbar_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}string_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}texteditor_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}textfield_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}timer_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}translator_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}utility_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}wb_lib.fd
+fd2pragma SPECIAL 35 TO {PROTOPATH} INFILE {FDPATH}window_lib.fd
+

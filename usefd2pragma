@@ -1,0 +1,1032 @@
+; $VER: usefd2pragma 1.8 (28.07.2001) (Freeware) by Dirk Stöcker <stoecker@epost.de>
+; ToDo: Lots of options need to be disabled for types >10
+; MorphOS stuff, CLIB, SFD, FD targets (>= 130) missing
+
+Delete >NIL: ENV:UseFD#?
+
+SetEnv UseFDOnCOMMENT       " A"
+SetEnv UseFDOnEXTERNC       " B"
+SetEnv UseFDOnFPUONLY       " C"
+SetEnv UseFDOnNEWSYNTAX     " D"
+SetEnv UseFDOnNOFPU         " E"
+SetEnv UseFDOnNOPPC         " F"
+SetEnv UseFDOnNOPPCREGNAME  " G"
+SetEnv UseFDOnNOSYMBOL      " H"
+SetEnv UseFDOnONLYCNAMES    " I"
+SetEnv UseFDOnOPT040        " J"
+SetEnv UseFDOnPPCONLY       " K"
+SetEnv UseFDOnPRIVATE       " L"
+SetEnv UseFDOnSECTION       " M"
+SetEnv UseFDOnSMALLCODE     " N"
+SetEnv UseFDOnSMALLDATA     " O"
+SetEnv UseFDOnSORTED        " P"
+SetEnv UseFDOnSYSTEMRELEASE " Q"
+SetEnv UseFDOnUSESYSCALL    " R"
+SetEnv UseFDOnVOIDBASE      " S"
+
+RequestChoice "Select the language you want to make files for"  "NOTE: This script may take several seconds from one to next step!*n*n1: C (pragmas, protos, stubs, linker libs)*n2: Pascal (stubs, linker libs, units)*n3: Assembler (lvo files)*n4: PPC Assembler (lvo files)*n5: Basic (BMAP files)*n6: E (Module)*n7: FD/SFD/Clib files*n*n8: FD files (from Pragma)" 1 2 3 4 5 6 7 8 >ENV:UseFDA1
+
+IF $UseFDA1 EQ 0		;**** FD file ****
+  RequestFile TITLE "Select the pragma input file" >ENV:UseFDInFile
+  RequestFile DRAWERSONLY TITLE "Select the output drawer" >ENV:UseFDOutDrawer
+  Echo "Executing following command:"
+  Echo "fd2pragma SPECIAL 200 INFILE" $UseFDInFile "TO" $UseFDOutDrawer
+  fd2pragma SPECIAL 200 INFILE $UseFDInFile TO $UseFDOutDrawer
+  Skip CleanUp
+EndIF
+
+IF $UseFDA1 EQ 1		;**** C ****
+  RequestChoice "Select the file type" "1: pragma files*n2: stubs, link library*n3: local libbase stubs*n4: protos*n5: GCC stuff*n6: PPC stuff (GCC, SAS-C, proto)*n7: VBCC stuff (68K, WOS, PPC, MorphOS)*n8: multifile assembler stubs" 1 2 3 4 5 6 7 8 >ENV:UseFDA2
+
+  IF $UseFDA2 EQ 1
+    RequestChoice "Select the pragma type" "1: Aztec*n2: DICE*n3: SAS*n4: MAXON*n5: STORM*n6: all [default]*n7: all + GCC redirect" 1 2 3 4 5 6 7 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 1
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 2
+    EndIF
+    IF $UseFDA3 EQ 3
+      SetEnv UseFDSPECIAL 3
+    EndIF
+    IF $UseFDA3 EQ 4
+      SetEnv UseFDSPECIAL 4
+    EndIF
+    IF $UseFDA3 EQ 5
+      SetEnv UseFDSPECIAL 5
+    EndIF
+    IF $UseFDA3 EQ 6
+      SetEnv UseFDSPECIAL 6
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 7
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 2
+    RequestChoice "Select the stub type" "1: C text*n2: assembler text*n3: link library" 1 2 3 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 10
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 11
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 12
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 3
+    RequestChoice "Select the type" "1: register call*n2: stack call" 1 2 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 13
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 14
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 4
+    RequestChoice "Select the proto type" "1: with pragma/..._lib.h call*n2: with pragma/..._pragmas.h call*n3: with pragmas/..._lib.h call*n4: with pragmas/..._pragmas.h call*n5: with local/..._loc.h call*n6: all compilers*n7: GNU-C compiler only*n8: without lib definition*n9: with VBCC inline call*n10: with PPC specials" 1 2 3 4 5 6 7 8 9 10 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 30
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 31
+    EndIF
+    IF $UseFDA3 EQ 3
+      SetEnv UseFDSPECIAL 32
+    EndIF
+    IF $UseFDA3 EQ 4
+      SetEnv UseFDSPECIAL 33
+    EndIF
+    IF $UseFDA3 EQ 5
+      SetEnv UseFDSPECIAL 34
+    EndIF
+    IF $UseFDA3 EQ 6
+      SetEnv UseFDSPECIAL 35
+    EndIF
+    IF $UseFDA3 EQ 7
+      SetEnv UseFDSPECIAL 36
+    EndIF
+    IF $UseFDA3 EQ 8
+      SetEnv UseFDSPECIAL 37
+    EndIF
+    IF $UseFDA3 EQ 9
+      SetEnv UseFDSPECIAL 38
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 39
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 5
+    RequestChoice "Select inline file type" "1: new*n2: old*n3: lib stubs*n4: new style macros*n5: new style inlines*n6: new style inlines (with include lines)" 1 2 3 4 5 6 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 40
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 41
+    EndIF
+    IF $UseFDA3 EQ 3
+      SetEnv UseFDSPECIAL 42
+    EndIF
+    IF $UseFDA3 EQ 4
+      SetEnv UseFDSPECIAL 43
+    EndIF
+    IF $UseFDA3 EQ 5
+      SetEnv UseFDSPECIAL 44
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 45
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 6
+    RequestChoice "Select PPC file type" "1: new inlines*n2: old inlines*n3: lib stub inlines*n4: SAS-C PPC file*n5: PPC proto file" 1 2 3 4 5 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 50
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 51
+    EndIF
+    IF $UseFDA3 EQ 3
+      SetEnv UseFDSPECIAL 52
+    EndIF
+    IF $UseFDA3 EQ 4
+      SetEnv UseFDSPECIAL 53
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 54
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 7
+    RequestChoice "Select destination system" "1: 68K*n2: WarpOS*n3: PowerUP*n4: MorphOS" 1 2 3 4 >ENV:UseFDVBCC
+    IF $UseFDVBCC EQ 1
+      RequestChoice "Select file type" "1: inlines*n2: stubs (ASM)*n3: stubs (multifile ASM)*n4: stubs (link library)*n5: auto lib open (c code)*n6: auto lib open lib" 1 2 3 4 5 6 >ENV:UseFDA3
+      IF $UseFDA3 EQ 1
+        SetEnv UseFDSPECIAL 70
+      EndIF
+      IF $UseFDA3 EQ 2
+        SetEnv UseFDSPECIAL 11
+      EndIF
+      IF $UseFDA3 EQ 3
+        SetEnv UseFDSPECIAL 90
+      EndIF
+      IF $UseFDA3 EQ 4
+        SetEnv UseFDSPECIAL 12
+      EndIF
+      IF $UseFDA3 EQ 5
+        SetEnv UseFDSPECIAL 120
+      EndIF
+      IF $UseFDA3 EQ 0
+        SetEnv UseFDSPECIAL 121
+      EndIF
+    EndIF
+    IF $UseFDVBCC EQ 2
+      RequestChoice "Select file type" "1: inlines*n2: stubs (ASM)*n3: stubs (ASM, libbase)*n4: stubs (multifile ASM)*n5: stubs (link library)*n6: stubs (link library, libbase)*n7: auto lib open (c code)" 1 2 3 4 5 6 7 >ENV:UseFDA3
+      IF $UseFDA3 EQ 1
+        SetEnv UseFDSPECIAL 77
+      EndIF
+      IF $UseFDA3 EQ 2
+        SetEnv UseFDSPECIAL 71
+      EndIF
+      IF $UseFDA3 EQ 3
+        SetEnv UseFDSPECIAL 72
+      EndIF
+      IF $UseFDA3 EQ 4
+        SetEnv UseFDSPECIAL 92
+      EndIF
+      IF $UseFDA3 EQ 5
+        SetEnv UseFDSPECIAL 73
+      EndIF
+      IF $UseFDA3 EQ 6
+        SetEnv UseFDSPECIAL 74
+      EndIF
+      IF $UseFDA3 EQ 0
+        SetEnv UseFDSPECIAL 120
+      EndIF
+    EndIF
+    IF $UseFDVBCC EQ 3
+      RequestChoice "Select file type" "1: stubs (ASM)*n2: stubs (multifile ASM)*n3: stubs (link library)*n4: auto lib open (c code)" 1 2 3 4 >ENV:UseFDA3
+      IF $UseFDA3 EQ 1
+        SetEnv UseFDSPECIAL 75
+      EndIF
+      IF $UseFDA3 EQ 2
+        SetEnv UseFDSPECIAL 91
+      EndIF
+      IF $UseFDA3 EQ 3
+        SetEnv UseFDSPECIAL 76
+      EndIF
+      IF $UseFDA3 EQ 0
+        SetEnv UseFDSPECIAL 120
+      EndIF
+    EndIF
+    IF $UseFDVBCC EQ 0
+      RequestChoice "Select file type" "1: stubs (multifile ASM)*n2: stubs (link library)" 1 2 >ENV:UseFDA3
+      IF $UseFDA3 EQ 1
+        SetEnv UseFDSPECIAL 93
+      EndIF
+      IF $UseFDA3 EQ 0
+        SetEnv UseFDSPECIAL 78
+      EndIF
+    EndIF
+  EndIF
+  If $UseFDA2 EQ 0
+    RequestChoice "Select file type" "1: 68K*n2: VBCC PowerUP*n3: VBCC WOS*n4: VBCC MorphOS" 1 2 3 4 >ENV:UseFDA3
+    IF $UseFDA3 EQ 1
+      SetEnv UseFDSPECIAL 90
+    EndIF
+    IF $UseFDA3 EQ 2
+      SetEnv UseFDSPECIAL 91
+    EndIF
+    IF $UseFDA3 EQ 3
+      SetEnv UseFDSPECIAL 92
+    EndIF
+    IF $UseFDA3 EQ 0
+      SetEnv UseFDSPECIAL 93
+    EndIF
+  EndIF
+EndIF
+
+IF $UseFDA1 EQ 2		;**** Pascal ****
+  RequestChoice "Select the file type" "1: stub-functions - assembler text*n2: stub-functions - link library*n3: FPC unit text" 1 2 3 >ENV:UseFDA2
+
+  IF $UseFDA2 EQ 1
+    SetEnv UseFDSPECIAL 15		; stub-functions for Pascal - assembler text
+  EndIF
+
+  IF $UseFDA2 EQ 2
+    SetEnv UseFDSPECIAL 16		; stub-functions for Pascal - link library
+  EndIF
+
+  IF $UseFDA2 EQ 0
+    SetEnv UseFDSPECIAL 60		; FPC pascal unit text
+  EndIF
+EndIF
+
+IF $UseFDA1 EQ 3		;**** Assembler ****
+  RequestChoice "Select the file type" "1: lvo _lvo.i file*n2: lvo _lib.i file*n3: lvo _lvo.i file no XDEF*n4: lvo _lib.i file no XDEF*n5: link library" 1 2 3 4 5 >ENV:UseFDA2
+
+  IF $UseFDA2 EQ 1
+    SetEnv UseFDSPECIAL 20		; assembler lvo _lvo.i file
+  EndIF
+
+  IF $UseFDA2 EQ 2
+    SetEnv UseFDSPECIAL 21		; assembler lvo _lib.i file
+  EndIF
+
+  IF $UseFDA2 EQ 3
+    SetEnv UseFDSPECIAL 22		; assembler lvo _lvo.i file no XDEF
+  EndIF
+
+  IF $UseFDA2 EQ 4
+    SetEnv UseFDSPECIAL 23		; assembler lvo _lib.i file no XDEF
+  EndIF
+
+  IF $UseFDA2 EQ 0
+    SetEnv UseFDSPECIAL 24		; assembler lvo link library
+  EndIF
+EndIF
+
+IF $UseFDA1 EQ 4		;**** PPC Assembler ****
+  RequestChoice "Select the file type" "1: lvo file*n2: lvo file (no XDEF)*n3: lvo ELF lib*n4: lvo EHF lib*n5: V.4 lvo file*n6: V.4 lvo file (no XDEF)*n7: V.4 lvo ELF lib*n8: V.4lvo EHF lib" 1 2 3 4 5 6 7 8 >ENV:UseFDA2
+
+  IF $UseFDA2 EQ 1
+    SetEnv UseFDSPECIAL 100		; assembler lvo
+  EndIF
+
+  IF $UseFDA2 EQ 2
+    SetEnv UseFDSPECIAL 101		; assembler lvo no XDEF
+  EndIF
+
+  IF $UseFDA2 EQ 3
+    SetEnv UseFDSPECIAL 102		; assembler lvo EHF lib
+  EndIF
+
+  IF $UseFDA2 EQ 4
+    SetEnv UseFDSPECIAL 103		; assembler lvo ELF lib
+  EndIF
+
+  IF $UseFDA2 EQ 5
+    SetEnv UseFDSPECIAL 104		; V.4 assembler lvo
+  EndIF
+
+  IF $UseFDA2 EQ 6
+    SetEnv UseFDSPECIAL 105		; V.4 assembler lvo no XDEF
+  EndIF
+
+  IF $UseFDA2 EQ 7
+    SetEnv UseFDSPECIAL 106		; V.4 assembler lvo EHF lib
+  EndIF
+
+  IF $UseFDA2 EQ 0
+    SetEnv UseFDSPECIAL 107		; V.4 assembler lvo ELF lib
+  EndIF
+EndIF
+
+IF $UseFDA1 EQ 5		;**** Basic ****
+  SetEnv UseFDSPECIAL 17		; BMAP file for AmigaBASIC and MaxonBASIC
+EndIF
+
+IF $UseFDA1 EQ 6		;**** E ****
+  SetEnv UseFDSPECIAL 18		; Module file for E
+EndIF
+
+IF $UseFDA1 EQ 7		;**** FD, SFD, Clib ****
+  RequestChoice "Select the file type" "1: FD file*n2: Clib file*n3: SFD file" 1 2 3 >ENV:UseFDA2
+
+  IF $UseFDA2 EQ 1
+    SetEnv UseFDSPECIAL 110		; FD
+  EndIF
+
+  IF $UseFDA2 EQ 2
+    SetEnv UseFDSPECIAL 111		; Clib
+  EndIF
+
+  IF $UseFDA2 EQ 0
+    SetEnv UseFDSPECIAL 112		; SFD
+  EndIF
+EndIF
+
+; **** create type depending data here ****
+SetEnv UseFDSPEC `Eval 1000+$UseFDSPECIAL` ; *** we need 3 digit numbers
+SetEnv UseFDMode 0
+SetEnv UseFDNeedCLIB 0
+IF 1010 GE $UseFDSPEC   ;  1 -  8
+  SetEnv UseFDOnEXTERNC ""
+  SetEnv UseFDOnNEWSYNTAX ""
+  SetEnv UseFDOnNOPPCREGNAME ""
+  SetEnv UseFDOnNOSYMBOL ""
+  SetEnv UseFDOnONLYCNAMES ""
+  SetEnv UseFDOnOPT040 ""
+  SetEnv UseFDOnSECTION ""
+  SetEnv UseFDOnSMALLDATA ""
+  SetEnv UseFDOnSMALLCODE ""
+  IF $UseFDSPECIAL EQ 1
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 2
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 3
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 4
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 5
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 6
+    SetEnv UseFDMode 1
+  EndIF
+  IF $UseFDSPECIAL EQ 7
+    SetEnv UseFDMode 1
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1020 GE $UseFDSPEC   ; 10 - 18
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 10
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 11
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 12
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 13
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 14
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 15
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 16
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1030 GE $UseFDSPEC   ; 20 - 24
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 20
+  EndIF
+  IF $UseFDSPECIAL EQ 21
+  EndIF
+  IF $UseFDSPECIAL EQ 22
+  EndIF
+  IF $UseFDSPECIAL EQ 23
+  EndIF
+  IF $UseFDSPECIAL EQ 24
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1040 GE $UseFDSPEC   ; 30 - 39
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 30
+  EndIF
+  IF $UseFDSPECIAL EQ 31
+  EndIF
+  IF $UseFDSPECIAL EQ 32
+  EndIF
+  IF $UseFDSPECIAL EQ 33
+  EndIF
+  IF $UseFDSPECIAL EQ 34
+  EndIF
+  IF $UseFDSPECIAL EQ 35
+  EndIF
+  IF $UseFDSPECIAL EQ 36
+  EndIF
+  IF $UseFDSPECIAL EQ 37
+  EndIF
+  IF $UseFDSPECIAL EQ 38
+  EndIF
+  IF $UseFDSPECIAL EQ 39
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1050 GE $UseFDSPEC   ; 40 - 45
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 40
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 41
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 42
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 43
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 44
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 45
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1060 GE $UseFDSPEC   ; 50 - 54
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 50
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 51
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 52
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 53
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 54
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1070 GE $UseFDSPEC   ; 60
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 60
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1080 GE $UseFDSPEC   ; 70 - 77
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 70
+    SetEnv UseFDMode 2
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 71
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 72
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 73
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 74
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 75
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 76
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 77
+    SetEnv UseFDNeedCLIB 1
+  EndIF
+  IF $UseFDSPECIAL EQ 78
+    SetEnv UseFDMode 2
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1090 GE $UseFDSPEC   ; 80 - 83
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 80
+  EndIF
+  IF $UseFDSPECIAL EQ 81
+  EndIF
+  IF $UseFDSPECIAL EQ 82
+  EndIF
+  IF $UseFDSPECIAL EQ 83
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1100 GE $UseFDSPEC  ; 90 - 93
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 90
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 91
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 92
+    SetEnv UseFDMode 2
+  EndIF
+  IF $UseFDSPECIAL EQ 93
+    SetEnv UseFDMode 2
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1110 GE $UseFDSPEC  ; 100 - 107
+  SetEnv UseFDOnCOMMENT ""
+  SetEnv UseFDOnEXTERNC ""
+  SetEnv UseFDOnFPUONLY ""
+  SetEnv UseFDOnNEWSYNTAX ""
+  SetEnv UseFDOnNOFPU ""
+  SetEnv UseFDOnNOPPC ""
+  SetEnv UseFDOnNOPPCREGNAME ""
+  SetEnv UseFDOnNOSYMBOL ""
+  SetEnv UseFDOnONLYCNAMES ""
+  SetEnv UseFDOnOPT040 ""
+  SetEnv UseFDOnPPCONLY ""
+  SetEnv UseFDOnPRIVATE ""
+  SetEnv UseFDOnSECTION ""
+  SetEnv UseFDOnSMALLDATA ""
+  SetEnv UseFDOnSMALLCODE ""
+  SetEnv UseFDOnSORTED ""
+  SetEnv UseFDOnSYSTEMRELEASE ""
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 100
+  EndIF
+  IF $UseFDSPECIAL EQ 101
+  EndIF
+  IF $UseFDSPECIAL EQ 102
+  EndIF
+  IF $UseFDSPECIAL EQ 103
+  EndIF
+  IF $UseFDSPECIAL EQ 104
+  EndIF
+  IF $UseFDSPECIAL EQ 105
+  EndIF
+  IF $UseFDSPECIAL EQ 106
+  EndIF
+  IF $UseFDSPECIAL EQ 107
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1120 GE $UseFDSPEC  ; 110 - 112
+  SetEnv UseFDOnUSESYSCALL ""
+  SetEnv UseFDMode 2
+  SetEnv UseFDNeedCLIB 1
+  IF $UseFDSPECIAL EQ 110
+    SetEnv UseFDOnEXTERNC ""
+    SetEnv UseFDOnSORTED ""
+  EndIF
+  IF $UseFDSPECIAL EQ 111
+  EndIF
+    SetEnv UseFDOnEXTERNC ""
+    SetEnv UseFDOnSORTED ""
+  IF $UseFDSPECIAL EQ 112
+  EndIF
+  Skip EndDisableOpts
+EndIF
+IF 1130 GE $UseFDSPEC  ; 120 - 121
+  SetEnv UseFDOnCOMMENT ""
+  SetEnv UseFDOnEXTERNC ""
+  SetEnv UseFDOnFPUONLY ""
+  SetEnv UseFDOnNEWSYNTAX ""
+  SetEnv UseFDOnNOFPU ""
+  SetEnv UseFDOnNOPPC ""
+  SetEnv UseFDOnNOPPCREGNAME ""
+  SetEnv UseFDOnNOSYMBOL ""
+  SetEnv UseFDOnONLYCNAMES ""
+  SetEnv UseFDOnOPT040 ""
+  SetEnv UseFDOnPPCONLY ""
+  SetEnv UseFDOnPRIVATE ""
+  SetEnv UseFDOnSECTION ""
+  SetEnv UseFDOnSORTED ""
+  SetEnv UseFDOnSYSTEMRELEASE ""
+  SetEnv UseFDOnUSESYSCALL ""
+  IF $UseFDSPECIAL EQ 120
+  EndIF
+  IF $UseFDSPECIAL EQ 121
+  EndIF
+  Skip EndDisableOpts
+EndIF
+
+Lab EndDisableOpts
+; **** scan options here ****
+Delete ENV:UseFDArgs >NIL:
+
+Lab ScanOpts
+Delete ENV:UseFDOptions >NIL:
+Echo NOLINE >ENV:UseFDOptionText  "See documentation for option description.**n"
+Echo NOLINE >>ENV:UseFDOptionText "Finish this request with 'x'.**n**n"
+
+SetEnv UseFDNum 0
+IF $UseFDOnCOMMENT
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnCOMMENT=COMMENT      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnCOMMENT"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo >>ENV:UseFDOptionText ""
+  EndIF
+EndIF
+IF $UseFDOnEXTERNC
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnEXTERNC=EXTERNC      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnEXTERNC"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnFPUONLY
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnFPUONLY=FPUONLY      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnFPUONLY"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnNEWSYNTAX
+  Echo NOLINE >>ENV:UseFDOptionText        "$UseFDOnNEWSYNTAX=NEWSYNTAX    "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnNEWSYNTAX"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnNOFPU
+  Echo NOLINE >>ENV:UseFDOptionText            "$UseFDOnNOFPU=NOFPU        "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnNOFPU"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnNOPPC
+  Echo NOLINE >>ENV:UseFDOptionText            "$UseFDOnNOPPC=NOPPC        "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnNOPPC"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnNOPPCREGNAME
+  Echo NOLINE >>ENV:UseFDOptionText     "$UseFDOnNOPPCREGNAME=NOPPCREGNAME "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnNOPPCREGNAME"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnNOSYMBOL
+  Echo NOLINE >>ENV:UseFDOptionText         "$UseFDOnNOSYMBOL=NOSYMBOL     "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnNOSYMBOL"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnONLYCNAMES
+  Echo NOLINE >>ENV:UseFDOptionText       "$UseFDOnONLYCNAMES=ONLYCNAMES   "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnONLYCNAMES"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnOPT040
+  Echo NOLINE >>ENV:UseFDOptionText           "$UseFDOnOPT040=OPT040       "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnOPT040"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnPPCONLY
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnPPCONLY=PPCONLY      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnPPCONLY"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnPRIVATE
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnPRIVATE=PRIVATE      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnPRIVATE"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnSECTION
+  Echo NOLINE >>ENV:UseFDOptionText          "$UseFDOnSECTION=SECTION      "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnSECTION"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnSMALLCODE
+  Echo NOLINE >>ENV:UseFDOptionText        "$UseFDOnSMALLCODE=SMALLCODE    "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnSMALLCODE"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnSMALLDATA
+  Echo NOLINE >>ENV:UseFDOptionText        "$UseFDOnSMALLDATA=SMALLDATA    "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnSMALLDATA"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnSORTED
+  Echo NOLINE >>ENV:UseFDOptionText           "$UseFDOnSORTED=SORTED       "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnSORTED"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnSYSTEMRELEASE
+  Echo NOLINE >>ENV:UseFDOptionText    "$UseFDOnSYSTEMRELEASE=SYSTEMRELEASE"
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnSYSTEMRELEASE"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnUSESYSCALL
+  Echo NOLINE >>ENV:UseFDOptionText       "$UseFDOnUSESYSCALL=USESYSCALL   "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnUSESYSCALL"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+IF $UseFDOnVOIDBASE
+  Echo NOLINE >>ENV:UseFDOptionText         "$UseFDOnVOIDBASE=VOIDBASE     "
+  Echo NOLINE >>ENV:UseFDOptions    "$UseFDOnVOIDBASE"
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+  IF `Eval $UseFDNum % 3` EQ 0
+    Echo NOLINE >>ENV:UseFDOptionText "**n"
+  EndIF
+EndIF
+
+IF $UseFDNum EQ 0
+  Skip EndScanOpts
+EndIF
+
+RequestChoice "Select Option" "`Type ENV:UseFDOptionText`" $UseFDOptions "x" >ENV:UseFDOption
+
+IF $UseFDOption EQ 0
+  Skip EndScanOpts
+EndIF
+
+SetEnv UseFDNum 1
+IF $UseFDOnCOMMENT
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " COMMENT"
+    SetEnv UseFDOnCOMMENT ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnEXTERNC
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " EXTERNC"
+    SetEnv UseFDOnEXTERNC ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnFPUONLY
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " FPUONLY"
+    SetEnv UseFDOnFPUONLY ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnNEWSYNTAX
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " NEWSYNTAX"
+    SetEnv UseFDOnNEWSYNTAX ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnNOFPU
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " NOFPU"
+    SetEnv UseFDOnNOFPU ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnNOPPC
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " NOPPC"
+    SetEnv UseFDOnNOPPC ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnNOPPCREGNAME
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " NOPPCREGNAME"
+    SetEnv UseFDOnNOPPCREGNAME ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnNOSYMBOL
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " NOSYMBOL"
+    SetEnv UseFDOnNOSYMBOL ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnONLYCNAMES
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " ONLYCNAMES"
+    SetEnv UseFDOnONLYCNAMES ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnOPT040
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " OPT040"
+    SetEnv UseFDOnOPT040 ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnPPCONLY
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " PPCONLY"
+    SetEnv UseFDOnPPCONLY ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnPRIVATE
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " PRIVATE"
+    SetEnv UseFDOnPRIVATE ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnSECTION
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " SECTION"
+    SetEnv UseFDOnSECTION ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnSMALLCODE
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " SMALLCODE"
+    SetEnv UseFDOnSMALLCODE ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnSMALLDATA
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " SMALLDATA"
+    SetEnv UseFDOnSMALLDATA ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnSORTED
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " SORTED"
+    SetEnv UseFDOnSORTED ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnSYSTEMRELEASE
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " SYSTEMRELEASE"
+    SetEnv UseFDOnSYSTEMRELEASE ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnUSESYSCALL
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " USESYSCALL"
+    SetEnv UseFDOnUSESYSCALL ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+IF $UseFDOnVOIDBASE
+  IF $UseFDOption EQ $UseFDNum
+    Echo NOLINE >>ENV:UseFDArgs " VOIDBASE"
+    SetEnv UseFDOnVOIDBASE ""
+  EndIF
+  SetEnv UseFDNum `Eval $UseFDNum+1`
+EndIF
+
+Skip ScanOpts BACK
+
+Lab EndScanOpts
+
+RequestChoice "Do you want to insert a header?" "Select*nHEADERFILE to enter a file or*nSCANHEADER to scan the destionation file." HEADERFILE SCANHEADER NoHeader >ENV:UseFDHeader
+IF $UseFDHeader EQ 1
+  RequestFile TITLE "Select the header file" >>ENV:UseFDHeaderFile
+  IF $UseFDCLIB
+    Echo NOLINE >>ENV:UseFDArgs "HEADER=*""
+    Echo NOLINE >>ENV:UseFDArgs $UseFDHeaderFile
+    Echo NOLINE >>ENV:UseFDArgs "*""
+  EndIF
+EndIF
+
+IF $UseFDHeader EQ 2
+  Echo NOLINE >>ENV:UseFDArgs "HEADER=@"
+EndIF
+
+IF $UseFDMode EQ 1
+  RequestChoice "Select definition mode" "1: _INCLUDE_PRAGMA_..._LIB_H [default]*n2: _PRAGMAS_..._LIB_H*n3: _PRAGMAS_..._PRAGMAS_H*n4: no definition" 1 2 3 4 >ENV:UseFDMode2
+  IF $UseFDMode2 EQ 1
+    Echo NOLINE >>ENV:UseFDArgs " MODE 1"
+  EndIF
+  IF $UseFDMode2 EQ 2
+    Echo NOLINE >>ENV:UseFDArgs " MODE 2"
+  EndIF
+  IF $UseFDMode2 EQ 3
+    Echo NOLINE >>ENV:UseFDArgs " MODE 3"
+  EndIF
+  IF $UseFDMode2 EQ 0
+    Echo NOLINE >>ENV:UseFDArgs " MODE 4"
+  EndIF
+EndIF
+
+IF $UseFDMode EQ 2
+  RequestChoice "Select work mode" "1: all functions, normal interface*n2: only tag-functions, tagcall interface*n3: all functions, both interfaces [default]" 1 2 3 >ENV:UseFDMode2
+  IF $UseFDMode2 EQ 1
+    Echo NOLINE >>ENV:UseFDArgs " MODE 1"
+  EndIF
+  IF $UseFDMode2 EQ 2
+    Echo NOLINE >>ENV:UseFDArgs " MODE 2"
+  EndIF
+  IF $UseFDMode2 EQ 0
+    Echo NOLINE >>ENV:UseFDArgs " MODE 3"
+  EndIF
+EndIF
+
+RequestFile TITLE "Select the FD input file" >ENV:UseFDInFile
+IF $UseFDNeedCLIB EQ 1
+  RequestFile TITLE "Select the clib prototype file" >ENV:UseFDCLIB
+  IF $UseFDCLIB
+    Echo NOLINE >>ENV:UseFDArgs "CLIB=*""
+    Echo NOLINE >>ENV:UseFDArgs $UseFDCLIB
+    Echo NOLINE >>ENV:UseFDArgs "*""
+  EndIF
+EndIF
+RequestFile DRAWERSONLY TITLE "Select the output drawer" >ENV:UseFDOutDrawer
+
+Echo NOLINE >>ENV:UseFDArgs " INFILE=*""
+Echo NOLINE >>ENV:UseFDArgs $UseFDInFile
+Echo NOLINE >>ENV:UseFDArgs "*""
+
+IF $UseFDOutDrawer
+  Echo NOLINE >>ENV:UseFDArgs " TO=*""
+  Echo NOLINE >>ENV:UseFDArgs $UseFDOutDrawer
+  Echo NOLINE >>ENV:UseFDArgs "*""
+EndIF
+
+Echo NOLINE >>ENV:UseFDArgs " SPECIAL="
+Echo NOLINE >>ENV:UseFDArgs $UseFDSPECIAL
+
+Echo NOLINE "Executing following command:*nfd2pragma"
+Type ENV:UseFDArgs
+Echo "*n"
+
+fd2pragma `Type ENV:UseFDArgs`
+
+Lab CleanUp
+Delete >NIL: ENV:UseFD#?
+Echo "All Done. You can close this window now."

@@ -1,0 +1,40 @@
+.key FDFILE/A,CLIBFILE/A,DEST/A
+.bra {
+.ket }
+
+; $VER: MakeStuff 1.2 (12.01.1999)
+; script to create all the needed library stuff with fd2pragma
+; DEST must already exist and should be empty.
+
+FailAt 21
+
+; ************** Copy the fd to destination directory *******************
+MakeDir >NIL: {DEST}fd
+Copy {FDFILE} {DEST}fd QUIET
+
+; ********************** This is the C part *****************************
+MakeDir >NIL: {DEST}C
+MakeDir >NIL: {DEST}C/clib
+MakeDir >NIL: {DEST}C/pragma
+MakeDir >NIL: {DEST}C/proto
+MakeDir >NIL: {DEST}C/inline
+
+Copy {CLIBFILE} {DEST}C/clib QUIET
+fd2pragma {FDFILE} TO {DEST}C/pragma/
+fd2pragma {FDFILE} SPECIAL 35 TO {DEST}C/proto/
+fd2pragma {FDFILE} CLIB {CLIBFILE} SPECIAL 40 TO {DEST}C/inline/
+
+; ****************** This is the Assembler part *************************
+MakeDir >NIL: {DEST}ASM
+MakeDir >NIL: {DEST}ASM/lvo
+fd2pragma {FDFILE} SPECIAL 23 TO {DEST}ASM/lvo/
+
+; ******** This generates a link library for C and Assembler ************
+MakeDir >NIL: {DEST}lib
+fd2pragma {FDFILE} CLIB {CLIBFILE} SPECIAL 12 TO {DEST}lib/
+
+; **************************** other stuff ******************************
+
+; nothing more needed :-)
+
+FailAt 10

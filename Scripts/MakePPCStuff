@@ -1,0 +1,19 @@
+.key FDFILE/A,CLIBFILE/A,DEST/A
+.bra {
+.ket }
+
+; $VER: MakePPCStuff 1.0 (31.12.1998)
+; script to create all the needed library stuff with fd2pragma
+; DEST must already exist and should be empty.
+
+FailAt 21
+
+MakeDir >NIL: {DEST}proto
+MakeDir >NIL: {DEST}powerup/ppcpragmas
+MakeDir >NIL: {DEST}powerup/ppcinline
+
+fd2pragma {FDFILE} SPECIAL 53 CLIB {CLIBFILE} TO {DEST}powerup/ppcpragmas/
+fd2pragma {FDFILE} SPECIAL 54 TO {DEST}proto/
+fd2pragma {FDFILE} SPECIAL 50 CLIB {CLIBFILE} TO {DEST}powerup/ppcinline/
+
+FailAt 10

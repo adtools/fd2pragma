@@ -1,0 +1,43 @@
+.key FDFILE/A,CLIBFILE/A,DEST/A
+.bra {
+.ket }
+
+; $VER: MakeVBCC 1.0 (18.11.1999)
+; script to create all the needed library stuff with fd2pragma
+; DEST must already exist and should be empty.
+
+FailAt 21
+
+; ************** Copy the fd to destination directory *******************
+MakeDir >NIL: {DEST}fd
+Copy {FDFILE} {DEST}fd QUIET
+
+; ********************** This is the C part *****************************
+MakeDir >NIL: {DEST}C
+MakeDir >NIL: {DEST}C/clib
+MakeDir >NIL: {DEST}C/proto
+
+Copy {CLIBFILE} {DEST}C/clib QUIET
+fd2pragma {FDFILE} SPECIAL 37 TO {DEST}C/proto/
+
+; ****************** This is the Assembler part *************************
+MakeDir >NIL: {DEST}ASM
+MakeDir >NIL: {DEST}ASM/lvo
+
+fd2pragma {FDFILE} SPECIAL 23 TO {DEST}ASM/lvo/
+
+; ******** This generates a link library for C and Assembler ************
+MakeDir >NIL: {DEST}lib
+MakeDir >NIL: {DEST}lib/68k
+MakeDir >NIL: {DEST}lib/PPC
+MakeDir >NIL: {DEST}lib/WOS
+
+fd2pragma {FDFILE} CLIB {CLIBFILE} SPECIAL 13 TO {DEST}lib/68k
+fd2pragma {FDFILE} CLIB {CLIBFILE} SPECIAL 73 TO {DEST}lib/WOS
+fd2pragma {FDFILE} CLIB {CLIBFILE} SPECIAL 76 TO {DEST}lib/PPC
+
+; **************************** other stuff ******************************
+
+; nothing more needed :-)
+
+FailAt 10

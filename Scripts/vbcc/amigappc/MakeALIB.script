@@ -1,0 +1,305 @@
+.key -sd/S
+
+if not exists MakeALIB.script
+  echo "Please change first to the script's directory!"
+  quit
+endif
+
+assign _CLIB_: Develop:Asm/NDUK40/Include_h/clib
+assign _CLIB_: Develop:CC/netinclude/clib ADD
+assign _CLIB_: ADCD_2.1:NDK/NDK_3.5/Include/include_h/clib ADD
+assign _CLIB_: PPC-CDROM:PPCRelease/include/powerup/clib ADD
+
+set temp T:
+set fdLVOflags special 106 to $temp
+
+if "<-sd>" EQ ""
+  set lbmodel large data
+  set alibnam libamiga.a
+  set fdflags special 76 to $temp onlycnames
+  set vcflags +ppc -O1 -D__SASC -IPPCRelease:ppc-dev/include
+else
+  set lbmodel small data
+  set alibnam libamigas.a
+  set fdflags special 76 to $temp smalldata onlycnames
+  set vcflags +ppc -O1 -sd -D__SASC -IPPCRelease:ppc-dev/include
+endif
+
+echo "Checking for required commands. Stopping if missing.*N"
+
+failat 5
+  echo noline "which    : "
+    which which                 ;stop if missing. :-)
+  echo noline "copy     : "
+    which copy
+  echo noline "delete   : "
+    which delete
+  echo noline "execute  : "
+    which execute
+  echo noline "ar       : "
+    which ar
+  echo noline "list     : "
+    which list
+  echo noline "spat     : "
+    which spat
+  echo noline "fd2pragma: "
+    which fd2pragma
+  echo noline "vc       : "
+    which vc
+failat 20
+
+echo "*NCompiling $alibnam with $lbmodel model. This may take some time..."
+  delete t:($alibnam|#?.(s|o|a|lib)) quiet >nil:
+echo "*NProcessing FDs..."
+  failat 21
+
+echo "*NGenerating stub functions..."
+  ; OS3.1 libraries
+  fd2pragma $fdflags FD:amigaguide_lib.fd clib _CLIB_:amigaguide_protos.h
+  fd2pragma $fdflags FD:asl_lib.fd clib _CLIB_:asl_protos.h
+  fd2pragma $fdflags FD:battclock_lib.fd clib _CLIB_:battclock_protos.h
+  fd2pragma $fdflags FD:battmem_lib.fd clib _CLIB_:battmem_protos.h
+  fd2pragma $fdflags FD:bullet_lib.fd clib _CLIB_:bullet_protos.h
+  fd2pragma $fdflags FD:cardres_lib.fd clib _CLIB_:cardres_protos.h
+  fd2pragma $fdflags FD:cia_lib.fd clib _CLIB_:clib/cia_protos.h
+  fd2pragma $fdflags FD:colorwheel_lib.fd clib _CLIB_:colorwheel_protos.h
+  fd2pragma $fdflags FD:commodities_lib.fd clib _CLIB_:commodities_protos.h
+  fd2pragma $fdflags FD:console_lib.fd clib _CLIB_:console_protos.h
+  fd2pragma $fdflags FD:datatypes_lib.fd clib _CLIB_:datatypes_protos.h
+  fd2pragma $fdflags FD:diskfont_lib.fd clib _CLIB_:diskfont_protos.h
+  fd2pragma $fdflags FD:disk_lib.fd clib _CLIB_:disk_protos.h
+  fd2pragma $fdflags FD:dos_lib.fd clib _CLIB_:dos_protos.h
+  fd2pragma $fdflags FD:dtclass_lib.fd clib _CLIB_:dtclass_protos.h
+  fd2pragma $fdflags FD:exec_lib.fd clib _CLIB_:exec_protos.h
+  fd2pragma $fdflags FD:expansion_lib.fd clib _CLIB_:expansion_protos.h
+  fd2pragma $fdflags FD:gadtools_lib.fd clib _CLIB_:gadtools_protos.h
+  fd2pragma $fdflags FD:graphics_lib.fd clib _CLIB_:graphics_protos.h
+  fd2pragma $fdflags FD:icon_lib.fd clib _CLIB_:icon_protos.h
+  fd2pragma $fdflags FD:iffparse_lib.fd clib _CLIB_:iffparse_protos.h
+  fd2pragma $fdflags FD:input_lib.fd clib _CLIB_:input_protos.h
+  fd2pragma $fdflags FD:intuition_lib.fd clib _CLIB_:intuition_protos.h
+  fd2pragma $fdflags FD:keymap_lib.fd clib _CLIB_:keymap_protos.h
+  fd2pragma $fdflags FD:layers_lib.fd clib _CLIB_:layers_protos.h
+  fd2pragma $fdflags FD:locale_lib.fd clib _CLIB_:locale_protos.h
+  fd2pragma $fdflags FD:lowlevel_lib.fd clib _CLIB_:lowlevel_protos.h
+  fd2pragma $fdflags FD:mathffp_lib.fd clib _CLIB_:mathffp_protos.h
+  fd2pragma $fdflags FD:mathieeedoubbas_lib.fd clib _CLIB_:mathieeedoubbas_protos.h
+  fd2pragma $fdflags FD:mathieeedoubtrans_lib.fd clib _CLIB_:mathieeedoubtrans_protos.h
+  fd2pragma $fdflags FD:mathieeesingbas_lib.fd clib _CLIB_:mathieeesingbas_protos.h
+  fd2pragma $fdflags FD:mathieeesingtrans_lib.fd clib _CLIB_:mathieeesingtrans_protos.h
+  fd2pragma $fdflags FD:mathtrans_lib.fd clib _CLIB_:mathtrans_protos.h
+  fd2pragma $fdflags FD:misc_lib.fd clib _CLIB_:misc_protos.h
+  fd2pragma $fdflags FD:nonvolatile_lib.fd clib _CLIB_:nonvolatile_protos.h
+  fd2pragma $fdflags FD:potgo_lib.fd clib _CLIB_:potgo_protos.h
+  fd2pragma $fdflags FD:ramdrive_lib.fd clib _CLIB_:ramdrive_protos.h
+  fd2pragma $fdflags FD:realtime_lib.fd clib _CLIB_:realtime_protos.h
+  fd2pragma $fdflags FD:rexxsyslib_lib.fd clib _CLIB_:rexxsyslib_protos.h
+  fd2pragma $fdflags FD:timer_lib.fd clib _CLIB_:timer_protos.h
+  fd2pragma $fdflags FD:translator_lib.fd clib _CLIB_:translator_protos.h
+  fd2pragma $fdflags FD:utility_lib.fd clib _CLIB_:utility_protos.h
+  fd2pragma $fdflags FD:wb_lib.fd clib _CLIB_:wb_protos.h
+  ; OS3.5 libraries
+  fd2pragma $fdflags FD:aml_lib.fd clib _CLIB_:aml_protos.h
+  fd2pragma $fdflags FD:arexx_lib.fd clib _CLIB_:arexx_protos.h
+  fd2pragma $fdflags FD:bevel_lib.fd clib _CLIB_:bevel_protos.h
+  fd2pragma $fdflags FD:bitmap_lib.fd clib _CLIB_:bitmap_protos.h
+  fd2pragma $fdflags FD:button_lib.fd clib _CLIB_:button_protos.h
+  fd2pragma $fdflags FD:checkbox_lib.fd clib _CLIB_:checkbox_protos.h
+  fd2pragma $fdflags FD:chooser_lib.fd clib _CLIB_:chooser_protos.h
+  fd2pragma $fdflags FD:clicktab_lib.fd clib _CLIB_:clicktab_protos.h
+  fd2pragma $fdflags FD:datebrowser_lib.fd clib _CLIB_:datebrowser_protos.h
+  fd2pragma $fdflags FD:drawlist_lib.fd clib _CLIB_:drawlist_protos.h
+  fd2pragma $fdflags FD:fuelgauge_lib.fd clib _CLIB_:fuelgauge_protos.h
+  fd2pragma $fdflags FD:getfile_lib.fd clib _CLIB_:getfile_protos.h
+  fd2pragma $fdflags FD:getfont_lib.fd clib _CLIB_:getfont_protos.h
+  fd2pragma $fdflags FD:getscreenmode_lib.fd clib _CLIB_:getscreenmode_protos.h
+  fd2pragma $fdflags FD:glyph_lib.fd clib _CLIB_:glyph_protos.h
+  fd2pragma $fdflags FD:hdwrench_lib.fd clib _CLIB_:hdwrench_protos.h
+  fd2pragma $fdflags FD:integer_lib.fd clib _CLIB_:integer_protos.h
+  fd2pragma $fdflags FD:label_lib.fd clib _CLIB_:label_protos.h
+  fd2pragma $fdflags FD:layout_lib.fd clib _CLIB_:layout_protos.h
+  fd2pragma $fdflags FD:listbrowser_lib.fd clib _CLIB_:listbrowser_protos.h
+  fd2pragma $fdflags FD:palette_lib.fd clib _CLIB_:palette_protos.h
+  fd2pragma $fdflags FD:penmap_lib.fd clib _CLIB_:penmap_protos.h
+  fd2pragma $fdflags FD:popcycle_lib.fd clib _CLIB_:popcycle_protos.h
+  fd2pragma $fdflags FD:radiobutton_lib.fd clib _CLIB_:radiobutton_protos.h
+  fd2pragma $fdflags FD:requester_lib.fd clib _CLIB_:requester_protos.h
+  fd2pragma $fdflags FD:scroller_lib.fd clib _CLIB_:scroller_protos.h
+  fd2pragma $fdflags FD:slider_lib.fd clib _CLIB_:slider_protos.h
+  fd2pragma $fdflags FD:space_lib.fd clib _CLIB_:space_protos.h
+  fd2pragma $fdflags FD:speedbar_lib.fd clib _CLIB_:speedbar_protos.h
+  fd2pragma $fdflags FD:string_lib.fd clib _CLIB_:string_protos.h
+  fd2pragma $fdflags FD:texteditor_lib.fd clib _CLIB_:texteditor_protos.h
+  fd2pragma $fdflags FD:textfield_lib.fd clib _CLIB_:textfield_protos.h
+  fd2pragma $fdflags FD:window_lib.fd clib _CLIB_:window_protos.h
+  ; Third party libraries
+  fd2pragma $fdflags FD:ahi_lib.fd clib _CLIB_:ahi_protos.h
+  fd2pragma $fdflags FD:ahi_sub_lib.fd clib _CLIB_:ahi_sub_protos.h
+  fd2pragma $fdflags FD:cgxdither_lib.fd clib _CLIB_:cgxdither_protos.h
+  fd2pragma $fdflags FD:cgxsystem_lib.fd clib _CLIB_:cgxsystem_protos.h basename CGXSystemBase
+  fd2pragma $fdflags FD:cgxvideo_lib.fd clib _CLIB_:cgxvideo_protos.h
+  fd2pragma $fdflags FD:chunkyppc_lib.fd clib _CLIB_:chunkyppc_protos.h
+  fd2pragma $fdflags FD:cybergraphics_lib.fd clib _CLIB_:cybergraphics_protos.h
+  fd2pragma $fdflags FD:muiclass_lib.fd
+  fd2pragma $fdflags FD:muimaster_lib.fd clib _CLIB_:muimaster_protos.h
+;  fd2pragma $fdflags FD:multiuser_lib.fd clib _CLIB_:multiuser_protos.h
+  fd2pragma $fdflags FD:Picasso96API.fd clib _CLIB_:Picasso96_protos.h
+  fd2pragma $fdflags FD:powerpc_lib.fd clib _CLIB_:powerpc_protos.h
+  fd2pragma $fdflags FD:ppcdiss_lib.fd clib _CLIB_:ppcdiss_protos.h
+;  fd2pragma $fdflags FD:ppc_lib.fd clib _CLIB_:ppc_protos.h
+;  fd2pragma $fdflags FD:reqtools_lib.fd clib _CLIB_:reqtools_protos.h
+  fd2pragma $fdflags FD:rtgmaster_lib.fd clib _CLIB_:rtgmaster_protos.h
+  fd2pragma $fdflags FD:socket_lib.fd clib _CLIB_:socket_protos.h
+  fd2pragma $fdflags FD:triton_lib.fd ;clib _CLIB_:triton_protos.h
+  fd2pragma $fdflags FD:Warp3D.fd clib _CLIB_:Warp3D_protos.h
+  fd2pragma $fdflags FD:wizard_lib.fd clib _CLIB_:wizard_protos.h
+
+echo "*NGenerating LVOs..."
+  ; OS3.1 libraries
+  fd2pragma $fdLVOflags FD:amigaguide_lib.fd
+  fd2pragma $fdLVOflags FD:asl_lib.fd
+  fd2pragma $fdLVOflags FD:battclock_lib.fd
+  fd2pragma $fdLVOflags FD:battmem_lib.fd
+  fd2pragma $fdLVOflags FD:bullet_lib.fd
+  fd2pragma $fdLVOflags FD:cardres_lib.fd
+; fd2pragma $fdLVOflags FD:cia_lib.fd		; doesn't work!
+  fd2pragma $fdLVOflags FD:colorwheel_lib.fd
+  fd2pragma $fdLVOflags FD:commodities_lib.fd
+  fd2pragma $fdLVOflags FD:console_lib.fd
+  fd2pragma $fdLVOflags FD:datatypes_lib.fd
+  fd2pragma $fdLVOflags FD:diskfont_lib.fd
+  fd2pragma $fdLVOflags FD:disk_lib.fd
+  fd2pragma $fdLVOflags FD:dos_lib.fd
+  fd2pragma $fdLVOflags FD:dtclass_lib.fd
+  fd2pragma $fdLVOflags FD:exec_lib.fd
+  fd2pragma $fdLVOflags FD:expansion_lib.fd
+  fd2pragma $fdLVOflags FD:gadtools_lib.fd
+  fd2pragma $fdLVOflags FD:graphics_lib.fd
+  fd2pragma $fdLVOflags FD:icon_lib.fd
+  fd2pragma $fdLVOflags FD:iffparse_lib.fd
+  fd2pragma $fdLVOflags FD:input_lib.fd
+  fd2pragma $fdLVOflags FD:intuition_lib.fd
+  fd2pragma $fdLVOflags FD:keymap_lib.fd
+  fd2pragma $fdLVOflags FD:layers_lib.fd
+  fd2pragma $fdLVOflags FD:locale_lib.fd
+  fd2pragma $fdLVOflags FD:lowlevel_lib.fd
+  fd2pragma $fdLVOflags FD:mathffp_lib.fd
+  fd2pragma $fdLVOflags FD:mathieeedoubbas_lib.fd
+  fd2pragma $fdLVOflags FD:mathieeedoubtrans_lib.fd
+  fd2pragma $fdLVOflags FD:mathieeesingbas_lib.fd
+  fd2pragma $fdLVOflags FD:mathieeesingtrans_lib.fd
+  fd2pragma $fdLVOflags FD:mathtrans_lib.fd
+  fd2pragma $fdLVOflags FD:misc_lib.fd
+  fd2pragma $fdLVOflags FD:nonvolatile_lib.fd
+  fd2pragma $fdLVOflags FD:potgo_lib.fd
+  fd2pragma $fdLVOflags FD:ramdrive_lib.fd
+  fd2pragma $fdLVOflags FD:realtime_lib.fd
+  fd2pragma $fdLVOflags FD:rexxsyslib_lib.fd
+  fd2pragma $fdLVOflags FD:timer_lib.fd
+  fd2pragma $fdLVOflags FD:translator_lib.fd
+  fd2pragma $fdLVOflags FD:utility_lib.fd
+  fd2pragma $fdLVOflags FD:wb_lib.fd
+  ; OS3.5 libraries
+  fd2pragma $fdLVOflags FD:aml_lib.fd
+  fd2pragma $fdLVOflags FD:arexx_lib.fd 
+  fd2pragma $fdLVOflags FD:bevel_lib.fd
+  fd2pragma $fdLVOflags FD:bitmap_lib.fd
+  fd2pragma $fdLVOflags FD:button_lib.fd
+  fd2pragma $fdLVOflags FD:checkbox_lib.fd
+  fd2pragma $fdLVOflags FD:chooser_lib.fd
+  fd2pragma $fdLVOflags FD:clicktab_lib.fd
+  fd2pragma $fdLVOflags FD:datebrowser_lib.fd
+  fd2pragma $fdLVOflags FD:drawlist_lib.fd
+  fd2pragma $fdLVOflags FD:fuelgauge_lib.fd
+  fd2pragma $fdLVOflags FD:getfile_lib.fd
+  fd2pragma $fdLVOflags FD:getfont_lib.fd
+  fd2pragma $fdLVOflags FD:getscreenmode_lib.fd
+  fd2pragma $fdLVOflags FD:glyph_lib.fd
+  fd2pragma $fdLVOflags FD:hdwrench_lib.fd
+  fd2pragma $fdLVOflags FD:integer_lib.fd
+  fd2pragma $fdLVOflags FD:label_lib.fd
+  fd2pragma $fdLVOflags FD:layout_lib.fd
+  fd2pragma $fdLVOflags FD:listbrowser_lib.fd
+  fd2pragma $fdLVOflags FD:palette_lib.fd
+  fd2pragma $fdLVOflags FD:penmap_lib.fd
+  fd2pragma $fdLVOflags FD:popcycle_lib.fd
+  fd2pragma $fdLVOflags FD:radiobutton_lib.fd
+  fd2pragma $fdLVOflags FD:requester_lib.fd
+  fd2pragma $fdLVOflags FD:scroller_lib.fd
+  fd2pragma $fdLVOflags FD:slider_lib.fd
+  fd2pragma $fdLVOflags FD:space_lib.fd
+  fd2pragma $fdLVOflags FD:speedbar_lib.fd
+  fd2pragma $fdLVOflags FD:string_lib.fd
+  fd2pragma $fdLVOflags FD:texteditor_lib.fd
+  fd2pragma $fdLVOflags FD:textfield_lib.fd
+  fd2pragma $fdLVOflags FD:window_lib.fd
+  ; Third party libraries
+  fd2pragma $fdLVOflags FD:ahi_lib.fd
+  fd2pragma $fdLVOflags FD:ahi_sub_lib.fd
+  fd2pragma $fdLVOflags FD:cgxdither_lib.fd
+  fd2pragma $fdLVOflags FD:cgxsystem_lib.fd basename CGXSystemBase
+  fd2pragma $fdLVOflags FD:cgxvideo_lib.fd
+  fd2pragma $fdLVOflags FD:chunkyppc_lib.fd
+  fd2pragma $fdLVOflags FD:cybergraphics_lib.fd
+  fd2pragma $fdLVOflags FD:muiclass_lib.fd
+  fd2pragma $fdLVOflags FD:muimaster_lib.fd
+  fd2pragma $fdLVOflags FD:multiuser_lib.fd
+  fd2pragma $fdLVOflags FD:Picasso96API.fd
+  fd2pragma $fdLVOflags FD:powerpc_lib.fd
+  fd2pragma $fdLVOflags FD:ppcdiss_lib.fd
+  fd2pragma $fdLVOflags FD:ppc_lib.fd
+  fd2pragma $fdLVOflags FD:reqtools_lib.fd
+  fd2pragma $fdLVOflags FD:rtgmaster_lib.fd
+  fd2pragma $fdLVOflags FD:socket_lib.fd
+  fd2pragma $fdLVOflags FD:triton_lib.fd
+  fd2pragma $fdLVOflags FD:Warp3D.fd
+  fd2pragma $fdLVOflags FD:wizard_lib.fd
+  failat 20
+
+echo "*NCompiling/Assembling support routines..."
+  vc $vcflags -c #?.(c|s)
+
+echo "*NExtracting objects from library archives..."
+  cd > ${temp}cdir
+  cd $temp
+  spat "ar x" lib#?.a
+  cd `type ${temp}cdir`
+  delete force quiet ${temp}cdir
+
+echo "*NCreating new archive..."
+  ar q ${temp}${alibnam}_ #?.o ${temp}#?.o
+
+echo "*NCleaning up..."
+  delete ${temp}#?.(s|o|a|lib) #?.o quiet
+  rename ${temp}${alibnam}_ ${temp}${alibnam}
+
+unset vcflags
+unset fdflags
+unset fdLVOflags
+unset lbmodel
+
+set instto $temp
+
+which >nil: ask
+if not warn
+  ask "*NInstall $alibnam to vlibppc: (y/n)?"
+  if warn
+    set instto vlibppc:
+    failat 21
+    copy >nil: ${temp}$alibnam $instto
+    if not fail
+      delete ${temp}$alibnam quiet
+    endif
+    failat 20
+  endif
+endif
+
+if exists ${instto}${alibnam}
+  echo "*N*N...poooh... $alibnam can be found in ${instto}."
+else
+  echo "*N*NInstallation error!"
+endif
+
+unset instto
+unset alibnam
+assign _CLIB_: REMOVE

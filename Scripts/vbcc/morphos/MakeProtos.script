@@ -1,0 +1,118 @@
+set proto vincludemos:proto
+set inline vincludemos:inline
+
+set fdflags special 37 to $proto
+;set fdflags2 special 70 to $inline
+
+;assign _CLIB_: Develop:Asm/NDUK40/Include_h/clib
+;assign _CLIB_: Develop:CC/netinclude/clib ADD
+;assign _CLIB_: ADCD_2.1:NDK/NDK_3.5/Include/include_h/clib ADD
+;assign _CLIB_: PPC-CDROM:PPCRelease/include/powerup/clib ADD
+
+echo "*NGenerating proto headers..."
+  ; OS3.1 libraries
+  fd2pragma $fdflags FD:amigaguide_lib.fd
+  fd2pragma $fdflags FD:asl_lib.fd
+  fd2pragma $fdflags FD:battclock_lib.fd
+  fd2pragma $fdflags FD:battmem_lib.fd
+  fd2pragma $fdflags FD:bullet_lib.fd
+  fd2pragma $fdflags FD:cardres_lib.fd
+; fd2pragma $fdflags FD:cia_lib.fd		; doesn't work!
+  fd2pragma $fdflags FD:colorwheel_lib.fd
+  fd2pragma $fdflags FD:commodities_lib.fd
+  fd2pragma $fdflags FD:console_lib.fd
+  fd2pragma $fdflags FD:datatypes_lib.fd
+  fd2pragma $fdflags FD:diskfont_lib.fd
+  fd2pragma $fdflags FD:disk_lib.fd
+  fd2pragma $fdflags FD:dos_lib.fd
+  fd2pragma $fdflags FD:dtclass_lib.fd
+  fd2pragma $fdflags FD:exec_lib.fd
+  fd2pragma $fdflags FD:expansion_lib.fd
+  fd2pragma $fdflags FD:gadtools_lib.fd
+  fd2pragma $fdflags FD:graphics_lib.fd
+  fd2pragma $fdflags FD:icon_lib.fd
+  fd2pragma $fdflags FD:iffparse_lib.fd
+  fd2pragma $fdflags FD:input_lib.fd
+  fd2pragma $fdflags FD:intuition_lib.fd
+  fd2pragma $fdflags FD:keymap_lib.fd
+  fd2pragma $fdflags FD:layers_lib.fd
+  fd2pragma $fdflags FD:locale_lib.fd
+  fd2pragma $fdflags FD:lowlevel_lib.fd
+  fd2pragma $fdflags FD:mathffp_lib.fd
+  fd2pragma $fdflags FD:mathieeedoubbas_lib.fd
+  fd2pragma $fdflags FD:mathieeedoubtrans_lib.fd
+  fd2pragma $fdflags FD:mathieeesingbas_lib.fd
+  fd2pragma $fdflags FD:mathieeesingtrans_lib.fd
+  fd2pragma $fdflags FD:mathtrans_lib.fd
+  fd2pragma $fdflags FD:misc_lib.fd
+  fd2pragma $fdflags FD:nonvolatile_lib.fd
+  fd2pragma $fdflags FD:potgo_lib.fd
+  fd2pragma $fdflags FD:ramdrive_lib.fd
+  fd2pragma $fdflags FD:realtime_lib.fd
+  fd2pragma $fdflags FD:rexxsyslib_lib.fd
+  fd2pragma $fdflags FD:timer_lib.fd
+  fd2pragma $fdflags FD:translator_lib.fd
+  fd2pragma $fdflags FD:utility_lib.fd
+  fd2pragma $fdflags FD:wb_lib.fd
+  ; OS3.5 libraries
+  fd2pragma $fdflags FD:aml_lib.fd
+  fd2pragma $fdflags FD:arexx_lib.fd 
+  fd2pragma $fdflags FD:bevel_lib.fd
+  fd2pragma $fdflags FD:bitmap_lib.fd
+  fd2pragma $fdflags FD:button_lib.fd
+  fd2pragma $fdflags FD:checkbox_lib.fd
+  fd2pragma $fdflags FD:chooser_lib.fd
+  fd2pragma $fdflags FD:clicktab_lib.fd
+  fd2pragma $fdflags FD:datebrowser_lib.fd
+  fd2pragma $fdflags FD:drawlist_lib.fd
+  fd2pragma $fdflags FD:fuelgauge_lib.fd
+  fd2pragma $fdflags FD:getfile_lib.fd
+  fd2pragma $fdflags FD:getfont_lib.fd
+  fd2pragma $fdflags FD:getscreenmode_lib.fd
+  fd2pragma $fdflags FD:glyph_lib.fd
+  fd2pragma $fdflags FD:hdwrench_lib.fd
+  fd2pragma $fdflags FD:integer_lib.fd
+  fd2pragma $fdflags FD:label_lib.fd
+  fd2pragma $fdflags FD:layout_lib.fd
+  fd2pragma $fdflags FD:listbrowser_lib.fd
+  fd2pragma $fdflags FD:palette_lib.fd
+  fd2pragma $fdflags FD:penmap_lib.fd
+  fd2pragma $fdflags FD:popcycle_lib.fd
+  fd2pragma $fdflags FD:radiobutton_lib.fd
+  fd2pragma $fdflags FD:requester_lib.fd
+  fd2pragma $fdflags FD:scroller_lib.fd
+  fd2pragma $fdflags FD:slider_lib.fd
+  fd2pragma $fdflags FD:space_lib.fd
+  fd2pragma $fdflags FD:speedbar_lib.fd
+  fd2pragma $fdflags FD:string_lib.fd
+  fd2pragma $fdflags FD:texteditor_lib.fd
+  fd2pragma $fdflags FD:textfield_lib.fd
+  fd2pragma $fdflags FD:window_lib.fd
+  ; Third party libraries
+  fd2pragma $fdflags FD:ahi_lib.fd
+  fd2pragma $fdflags FD:ahi_sub_lib.fd
+  fd2pragma $fdflags FD:cgxdither_lib.fd
+  fd2pragma $fdflags FD:cgxsystem_lib.fd basename CGXSystemBase
+  fd2pragma $fdflags FD:cgxvideo_lib.fd
+  fd2pragma $fdflags FD:chunkyppc_lib.fd
+  fd2pragma $fdflags FD:cybergraphics_lib.fd
+  fd2pragma $fdflags FD:muiclass_lib.fd
+  fd2pragma $fdflags FD:muimaster_lib.fd
+  fd2pragma $fdflags FD:multiuser_lib.fd
+  fd2pragma $fdflags FD:Picasso96API.fd
+  fd2pragma $fdflags FD:powerpc_lib.fd
+  fd2pragma $fdflags FD:ppcdiss_lib.fd
+  fd2pragma $fdflags FD:ppc_lib.fd
+  fd2pragma $fdflags FD:reqtools_lib.fd
+  fd2pragma $fdflags FD:rtgmaster_lib.fd
+  fd2pragma $fdflags FD:socket_lib.fd
+  fd2pragma $fdflags FD:triton_lib.fd
+  fd2pragma $fdflags FD:Warp3D.fd
+  fd2pragma $fdflags FD:wizard_lib.fd
+
+echo "Done!"
+;assign _CLIB_: remove
+;unset fd2flags2
+unset fd2flags
+unset proto
+unset inline

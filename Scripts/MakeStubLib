@@ -1,0 +1,95 @@
+.key FDPATH/A,CLIBPATH/A
+.bra {
+.ket }
+
+; $VER: MakeStubLib 1.3 (13.11.1999)
+; script to create a amiga.lib like stub link library for all standard
+; Amiga system libraries (This cannot contain additionally amiga.lib stuff)
+; You may join it with small.lib to get an amiga.lib like file.
+;
+; To get this script to work you need a Join command, which supports
+; pattern matching, like "Aminet/util/sys/JoinReplace.lha".
+;
+; FDPATH and CLIBPATH must end in / or :
+
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}amigaguide_lib.fd CLIB {CLIBPATH}amigaguide_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}aml_lib.fd CLIB {CLIBPATH}aml_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}arexx_lib.fd CLIB {CLIBPATH}arexx_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}asl_lib.fd CLIB {CLIBPATH}asl_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}battclock_lib.fd CLIB {CLIBPATH}battclock_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}battmem_lib.fd CLIB {CLIBPATH}battmem_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}bevel_lib.fd CLIB {CLIBPATH}bevel_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}bitmap_lib.fd CLIB {CLIBPATH}bitmap_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}bullet_lib.fd CLIB {CLIBPATH}bullet_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}button_lib.fd CLIB {CLIBPATH}button_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}cardres_lib.fd CLIB {CLIBPATH}cardres_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}checkbox_lib.fd CLIB {CLIBPATH}checkbox_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}chooser_lib.fd CLIB {CLIBPATH}chooser_protos.h
+fd2pragma SPECIAL 14 SORTED MODE=3 TO T: INFILE {FDPATH}cia_lib.fd CLIB {CLIBPATH}cia_protos.h
+Delete T:cia_loc.h >NIL:
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}clicktab_lib.fd CLIB {CLIBPATH}clicktab_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}colorwheel_lib.fd CLIB {CLIBPATH}colorwheel_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}commodities_lib.fd CLIB {CLIBPATH}commodities_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}console_lib.fd CLIB {CLIBPATH}console_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}datatypes_lib.fd CLIB {CLIBPATH}datatypes_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}datebrowser_lib.fd CLIB {CLIBPATH}datebrowser_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}diskfont_lib.fd CLIB {CLIBPATH}diskfont_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}disk_lib.fd CLIB {CLIBPATH}disk_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}dos_lib.fd CLIB {CLIBPATH}dos_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}drawlist_lib.fd CLIB {CLIBPATH}drawlist_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}dtclass_lib.fd CLIB {CLIBPATH}dtclass_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}exec_lib.fd CLIB {CLIBPATH}exec_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}expansion_lib.fd CLIB {CLIBPATH}expansion_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}fuelgauge_lib.fd CLIB {CLIBPATH}fuelgauge_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}gadtools_lib.fd CLIB {CLIBPATH}gadtools_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}getfile_lib.fd CLIB {CLIBPATH}getfile_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}getfont_lib.fd CLIB {CLIBPATH}getfont_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}getscreenmode_lib.fd CLIB {CLIBPATH}getscreenmode_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}glyph_lib.fd CLIB {CLIBPATH}glyph_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}graphics_lib.fd CLIB {CLIBPATH}graphics_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}hdwrench_lib.fd CLIB {CLIBPATH}hdwrench_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}icon_lib.fd CLIB {CLIBPATH}icon_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}iffparse_lib.fd CLIB {CLIBPATH}iffparse_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}input_lib.fd CLIB {CLIBPATH}input_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}integer_lib.fd CLIB {CLIBPATH}integer_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}intuition_lib.fd CLIB {CLIBPATH}intuition_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}keymap_lib.fd CLIB {CLIBPATH}keymap_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}label_lib.fd CLIB {CLIBPATH}label_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}layers_lib.fd CLIB {CLIBPATH}layers_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}layout_lib.fd CLIB {CLIBPATH}layout_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}listbrowser_lib.fd CLIB {CLIBPATH}listbrowser_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}locale_lib.fd CLIB {CLIBPATH}locale_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}lowlevel_lib.fd CLIB {CLIBPATH}lowlevel_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathffp_lib.fd CLIB {CLIBPATH}mathffp_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathieeedoubbas_lib.fd CLIB {CLIBPATH}mathieeedoubbas_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathieeedoubtrans_lib.fd CLIB {CLIBPATH}mathieeedoubtrans_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathieeesingbas_lib.fd CLIB {CLIBPATH}mathieeesingbas_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathieeesingtrans_lib.fd CLIB {CLIBPATH}mathieeesingtrans_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}mathtrans_lib.fd CLIB {CLIBPATH}mathtrans_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}misc_lib.fd CLIB {CLIBPATH}misc_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}nonvolatile_lib.fd CLIB {CLIBPATH}nonvolatile_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}palette_lib.fd CLIB {CLIBPATH}palette_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}penmap_lib.fd CLIB {CLIBPATH}penmap_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}popcycle_lib.fd CLIB {CLIBPATH}popcycle_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}potgo_lib.fd CLIB {CLIBPATH}potgo_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}radiobutton_lib.fd CLIB {CLIBPATH}radiobutton_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}ramdrive_lib.fd CLIB {CLIBPATH}ramdrive_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}realtime_lib.fd CLIB {CLIBPATH}realtime_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}requester_lib.fd CLIB {CLIBPATH}requester_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}resource_lib.fd CLIB {CLIBPATH}resource_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}rexxsyslib_lib.fd CLIB {CLIBPATH}rexxsyslib_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}scroller_lib.fd CLIB {CLIBPATH}scroller_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}slider_lib.fd CLIB {CLIBPATH}slider_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}space_lib.fd CLIB {CLIBPATH}space_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}speedbar_lib.fd CLIB {CLIBPATH}speedbar_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}string_lib.fd CLIB {CLIBPATH}string_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}texteditor_lib.fd CLIB {CLIBPATH}texteditor_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}textfield_lib.fd CLIB {CLIBPATH}textfield_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}timer_lib.fd CLIB {CLIBPATH}timer_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}translator_lib.fd CLIB {CLIBPATH}translator_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}utility_lib.fd CLIB {CLIBPATH}utility_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}wb_lib.fd CLIB {CLIBPATH}wb_protos.h
+fd2pragma SPECIAL 12 SORTED MODE=3 TO T: INFILE {FDPATH}window_lib.fd CLIB {CLIBPATH}window_protos.h
+Join T:#?.lib AS stubs.lib >NIL:
+Delete T:#?.lib >NIL:
+

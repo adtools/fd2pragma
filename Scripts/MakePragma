@@ -1,0 +1,87 @@
+.key FDPATH/A,PRAGMAPATH/A
+.bra {
+.ket }
+
+; $VER: MakePragma 1.3 (13.11.1999)
+; script to create all the needed pragma files with fd2pragma
+; FDPATH must end in / or :
+; PRAGMAPATH must already exist and should be empty
+
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}amigaguide_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}aml_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}arexx_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}asl_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}battclock_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}battmem_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}bevel_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}bitmap_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}bullet_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}button_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}cardres_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}checkbox_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}chooser_lib.fd
+;fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}cia_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}clicktab_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}colorwheel_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}commodities_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}console_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}datatypes_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}datebrowser_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}diskfont_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}disk_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}dos_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}drawlist_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}dtclass_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}exec_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}expansion_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}fuelgauge_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}gadtools_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}getfile_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}getfont_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}getscreenmode_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}glyph_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}graphics_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}hdwrench_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}icon_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}iffparse_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}input_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}integer_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}intuition_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}keymap_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}label_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}layers_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}layout_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}listbrowser_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}locale_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}lowlevel_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathffp_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathieeedoubbas_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathieeedoubtrans_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathieeesingbas_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathieeesingtrans_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}mathtrans_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}misc_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}nonvolatile_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}palette_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}penmap_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}popcycle_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}potgo_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}radiobutton_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}ramdrive_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}realtime_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}requester_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}resource_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}rexxsyslib_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}scroller_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}slider_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}space_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}speedbar_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}string_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}texteditor_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}textfield_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}timer_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}translator_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}utility_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}wb_lib.fd
+fd2pragma TO {PRAGMAPATH} INFILE {FDPATH}window_lib.fd
+

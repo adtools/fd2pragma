@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.185 (08.02.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.186 (17.02.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -296,6 +296,7 @@ static const char version[] =
         Special Warp3DPPC support.
         Marked some powerpc.library functions, which were erroneously
         detected as tag functions.
+ 2.186 17.02.05 : fixed PPC0-mode VBCC WOS stubs
 */
 
 /* A short note, how fd2pragma works.
@@ -2167,7 +2168,7 @@ static uint32 MakeTagFunction(struct AmiPragma *ap)
 
 #ifdef DEBUG
   if(ap->TagName)
-    printf("MakeTagFunction: %s / %s (...%s)", ap->TagName,
+    printf("MakeTagFunction: %s / %s (...%s)\n", ap->TagName,
     ap->FuncName, ap->Args[ap->CallArgs-1].ArgName);
 #endif
 
@@ -6899,9 +6900,24 @@ uint32 FuncVBCCWOSText(struct AmiPragma *ap, uint32 flags, strptr name)
   }
   else if(ap->Flags & AMIPRAGFLAG_PPC0)
   {
-    DoOutput("\tlwz\t%s11,_%s(%s2)\n\tlwz\t%s0,-%d(%s11)\n"
-    "\tmtlr\t%s0\n\tblrl\n", PPCRegPrefix, BaseName, PPCRegPrefix,
-    PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
+    DoOutput("\tmflr\t%s0\n"
+             "\tstw\t%s3,24(%s1)\n"   /* save tag1 */
+             "\tstw\t%s0,8(%s1)\n"    /* store LR */
+             "\tstwu\t%s1,-32(%s1)\n" /* new stack frame */
+             "\taddi\t%s3,%s1,24\n"   /* TagItem pointer */
+             "\tlwz\t%s11,_%s(%s2)\n"
+             "\tlwz\t%s0,-%d(%s11)\n"
+             "\tmtlr\t%s0\n"
+             "\tblrl\n"
+             "\tlwz\t%s0,40(%s1)\n"
+             "\taddi\t%s1,%s1,32\n"
+             "\tmtlr\t%s0\n"
+             "\tblr\n",
+    PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+    PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+    BaseName, PPCRegPrefix, PPCRegPrefix, ap->Bias-2, PPCRegPrefix,
+    PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, 
+    PPCRegPrefix);
   }
   else if(ap->Flags & AMIPRAGFLAG_PPC)
   {
@@ -7132,10 +7148,21 @@ uint32 FuncVBCCWOSCode(struct AmiPragma *ap, uint32 flags, strptr name)
   else if(ap->Flags & AMIPRAGFLAG_PPC0)
   {
     basepos = data;
+    /* mflr r0 = mfspr r0,8 = get link register */
+    EndPutM32Inc(data, 0x7C0802A6);
+    EndPutM32Inc(data, 0x90610018);             /* stw r3,24(r1) */
+    EndPutM32Inc(data, 0x90010008);             /* stw r0,8(r1) */
+    EndPutM32Inc(data, 0x9421FFCE);             /* stwu r1,-32(r1) */
+    EndPutM32Inc(data, 0x38610018);             /* addi r3,r1,24 */
     EndPutM32Inc(data, 0x81620000);             /* lwz r11,BaseName(r2) */
     EndPutM32Inc(data, 0x800C0000-(ap->Bias-2));/* lwz r0,-ap->Bias-2(r11) */
     EndPutM32Inc(data, 0x7C0803A6);             /* mtlr r0 = mtspr 8,r0 = store link register */
     EndPutM32Inc(data, 0x4E800021);             /* blrl = bclrl 20,0 = jump */
+    EndPutM32Inc(data, 0x80010028);             /* lwz r0,40(r1) */
+    EndPutM32Inc(data, 0x38210020);             /* addi r1,r1,32 */
+    /* mtlr r0 = mtspr 8,r0 = restore link register */
+    EndPutM32Inc(data, 0x7C0803A6);
+    EndPutM32Inc(data, 0x4E800020);             /* blr = bclr 20,0 = jump */
   }
   else if(ap->Flags & AMIPRAGFLAG_PPC)
   {

@@ -1,5 +1,5 @@
 static const char version[] =
-"$VER: fd2pragma 2.178 (09.10.2004) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.179 (09.11.2004) by Dirk Stoecker <stoecker@epost.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -278,6 +278,7 @@ static const char version[] =
  2.176 21.09.04 : added new MorphOS VBCC inlines and some other OS4 fixes
  2.177 23.09.04 : minor bugfix
  2.178 09.10.04 : (phx) vbcc: use __linearvarargs instead of __aos4varargs
+ 2.179 09.11.04 : (phx) make it compile natively under AmigaOS 4.x
 */
 
 /* A short note, how fd2pragma works.
@@ -341,12 +342,16 @@ users to use their brains :-)
 #include <time.h>
 
 /* These are the only allowed variable types of all related programs! */
+#ifdef __amigaos4__
+#include <exec/types.h>
+#else
 typedef signed char         int8;       /* signed 8 bit */
 typedef unsigned char      uint8;       /* unsigned 8 bit */
 typedef signed short int    int16;      /* signed 16 bit */
 typedef unsigned short int uint16;      /* unsigned 16 bit */
 typedef signed long int     int32;      /* signed 32 bit */
 typedef unsigned long int  uint32;      /* unsigned 32 bit */
+#endif
 typedef float                fl32;      /* 32 bit IEEE float value */
 typedef double               fl64;      /* 64 bit IEEE double value */
 typedef char               string;      /* the string datatype [e.g. one character of string!] */
@@ -809,6 +814,9 @@ struct ArHeader {
 };
 
 /* AmigaOS hunk structure definitions */
+#ifdef __amigaos4__
+#include <dos/doshunks.h>
+#else
 #define HUNK_UNIT       999
 #define HUNK_NAME       1000
 #define HUNK_CODE       1001
@@ -823,6 +831,7 @@ struct ArHeader {
 #define EXT_ABS         2       /* Absolute definition */
 #define EXT_REF32       129     /* 32 bit absolute reference to symbol */
 #define EXT_DEXT16      134     /* 16 bit data relative reference */
+#endif
 /* ------------------------------------------------------------------ */
 
 static struct Args             args            = {0,0,0,0,6,0};

@@ -114,6 +114,8 @@ SLayer			: void *
 va_list                 : char *
 time_t			: long
 size_t			: unsigned int
+*stdio.h (also used in SDL)
+FILE			: struct ? *
 * some useful types
 uint8			: unsigned char
 uint16			: unsigned short
@@ -303,6 +305,8 @@ Uint16            : unsigned short
 Sint16            : signed short
 Uint32            : unsigned long
 Sint32            : signed long
+*Uint64            : unsigned long long
+*Sint64            : signed long long
 SDL_version       : struct !
 SDL_RWops         : struct SDL_RWops
 SDL_Rect          : struct !
@@ -351,3 +355,4 @@ SDL_Thread        : struct SDL_Thread
 SDL_TimerCallback : unsigned long (*)(unsigned long)
 SDL_NewTimerCallback : unsigned long (*)(unsigned long,void *)
 SDL_TimerID       : struct _SDL_TimerID
+SDL_errorcode	  : enum ?

@@ -305,8 +305,8 @@ Uint16            : unsigned short
 Sint16            : signed short
 Uint32            : unsigned long
 Sint32            : signed long
-*Uint64            : unsigned long long
-*Sint64            : signed long long
+Uint64            : unsigned long long
+Sint64            : signed long long
 SDL_version       : struct !
 SDL_RWops         : struct SDL_RWops
 SDL_Rect          : struct !
@@ -356,3 +356,17 @@ SDL_TimerCallback : unsigned long (*)(unsigned long)
 SDL_NewTimerCallback : unsigned long (*)(unsigned long,void *)
 SDL_TimerID       : struct _SDL_TimerID
 SDL_errorcode	  : enum ?
+FPSmanager        : struct !
+Mix_Chunk         : struct !
+Mix_Music         : struct !
+Mix_MusicType     : enum ?
+Mix_EffectFunc_t  : void (*)(int,void *,int,void *)
+Mix_EffectDone_t  : void (*)(int,void *)
+Mix_Fading        : enum ?
+IPaddress         : struct !
+TCPsocket         : void *
+UDPpacket         : struct !
+UDPsocket         : void *
+SDLNet_SocketSet  : void *
+SDLNet_GenericSocket : void *
+TTF_Font          : struct !

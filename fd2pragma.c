@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.187 (26.03.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.188 (30.03.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -308,6 +308,7 @@ static const char version[] =
         TCPsocket, UDPpacket, UDPsocket, SDLNet_SocketSet,
         SDLNet_GenericSocket, TTF_Font.
         Put some of SDL-gfx functions ("...RGBA()") in the exceptions list.
+ 2.188 30.03.05 : (phx) Put NewObject() into the NoInline-list.
 */
 
 /* A short note, how fd2pragma works.
@@ -1754,6 +1755,7 @@ some targets. At the moment these are varargs functions, which are used in
 the MUI style using complicated defines. Theses functions are disabled in
 certain GCC and VBCC environments. */
 static const strptr NoCreateInlineFuncs[] = {
+"NewObject",
 "MUI_NewObject",
 "PM_MakeItem",
 0,

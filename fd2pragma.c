@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.181 (20.12.2004) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.182 (16.01.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -284,6 +284,8 @@ static const char version[] =
         PM_MakeItem - otherwise the preprocessor gets confused
  2.181 20.12.04 : made test for MUI_NewObject and PM_MakeItem based on a field
         containing the names - allows easier expansion
+ 2.182 16.01.05 : (phx) experimental MorphOS "(sysv)" support, which doesn't
+        need a base-register passed as first argument
 */
 
 /* A short note, how fd2pragma works.
@@ -575,8 +577,9 @@ struct ShortListRoot {
 #define AMIPRAGFLAG_PPC2         (1<<13) /* type PPC2 */
 #define AMIPRAGFLAG_M68K         (1<<14) /* This is an M68K function */
 #define AMIPRAGFLAG_OWNTAGFUNC   (1<<15) /* MakeTagFunction create tag */
-#define AMIPRAGFLAG_MOSBASESYSV  (1<<16) /* MorphOS(base,sysv) type */
-#define AMIPRAGFLAG_VARARGS      (1<<17) /* last argument is ... */
+#define AMIPRAGFLAG_MOSSYSV      (1<<16) /* MorphOS(sysv) type */
+#define AMIPRAGFLAG_MOSBASESYSV  (1<<17) /* MorphOS(base,sysv) type */
+#define AMIPRAGFLAG_VARARGS      (1<<18) /* last argument is ... */
 
 struct AmiArgs {
   strptr                         ArgName;
@@ -3416,7 +3419,8 @@ static uint32 ScanFDFile(void)
             if(*in.pos == /*(*/')' && !ap.NumArgs)
               break;
 
-            if(!strncmp(in.pos, "base", 4))   /* MorphOS V.4 args */
+            /* MorphOS V.4 with base in r3: (base,sysv) */
+            if(!strncmp(in.pos, "base", 4))
             {
               in.pos = SkipBlanks(in.pos + 4);
               if(*in.pos == ',')
@@ -3432,6 +3436,16 @@ static uint32 ScanFDFile(void)
                   break;
                 }
               }
+            }
+            /* MorphOS V.4 without passing base: (sysv) */
+            else if(!strncmp(in.pos, "sysv", 4))
+            {
+              ap.Flags |= AMIPRAGFLAG_MOSSYSV;
+              ap.NumArgs = ap.CallArgs;
+              in.pos = SkipBlanks(in.pos + 4);
+              if(*in.pos != /*(*/')')
+                DoError(ERR_EXPECTED_CLOSE_BRACKET, linenum);
+              break;
             }
 
             in.pos = SkipName(oldptr);
@@ -6628,7 +6642,8 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
   {
-    if((flags & FUNCFLAG_TAG) && !(ap->Flags & AMIPRAGFLAG_MOSBASESYSV))
+    if((flags & FUNCFLAG_TAG) &&
+       !(ap->Flags & (AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV)))
     {
       for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
         DoOutput("long, ");
@@ -6647,7 +6662,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
   {
     if(!(Flags2 & FLAG2_SHORTPPCVBCCINLINE))
     {
-      if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+      if((ap->Flags & (AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
       && !(ap->Flags & AMIPRAGFLAG_VARARGS))
       {
         for(i = ap->NumArgs+(BaseName?1:0); i <= 8; ++i)
@@ -6674,6 +6689,25 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
     }
     DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
     "\t\"\\tblrl\";\n", PPCRegPrefix);
+  }
+  else if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
+  {
+    if (BaseName)
+    {
+      DoOutput(/*(*/") =\n\t\"\\tlis\\t%s12,%s@ha\\n\"\n"
+               "\t\"\\tlwz\\t%s11,%s@l(%s12)\\n\"\n"
+               "\t\"\\tlwz\\t%s0,-%d(%s11)\\n\"\n",
+               PPCRegPrefix, BaseName,
+               PPCRegPrefix, BaseName, PPCRegPrefix,
+               PPCRegPrefix, ap->Bias-2, PPCRegPrefix);
+    }
+    if((ap->Flags != AMIPRAGFLAG_VARARGS) && (flags & FUNCFLAG_TAG))
+    {
+      DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",  /* @@@ */
+      PPCRegPrefix,3+k+1,PPCRegPrefix);
+    }
+    DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
+             "\t\"\\tblrl\";\n", PPCRegPrefix);
   }
   else
   {
@@ -6735,7 +6769,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("...");
   }
   DoOutput(/*(*/") __%s("/*)*/, name);
-  if(BaseName)
+  if(BaseName && !(ap->Flags & AMIPRAGFLAG_MOSSYSV))
   {
     DoOutput("%s", BaseName);
     if(ap->NumArgs)
@@ -7767,207 +7801,226 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t.global %s\n", BaseName);
   DoOutput("\t.global %s\n\t.align\t4\n%s:\n",name, name);
 
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    if(flags & FUNCFLAG_TAG)
-    {
-      DoOutput(
-      "\tmflr\t%s0\n"
-      "\tlwz\t%s11,0(%s1)\n"    /* backchain to next frame */
-      "\tsub\t%s12,%s11,%s1\n"  /* difference = size of frame to copy */
-      "\tstw\t%s0,4(%s1)\n"
-      "\tsub\t%s11,%s1,%s12\n"
-      "\tsubi\t%s11,%s11,16\n"  /* r11 Start of new frame, +16 size */
-      "\tstw\t%s1,0(%s11)\n"    /* Backchain to last frame */
-      "\tsrwi\t%s12,%s12,2\n"
-      "\tsubi\t%s0,%s12,2\n"    /* size/4-2 = number of longwords to copy */
-      "\taddi\t%s12,%s1,4\n"
-      "\tmr\t%s1,%s11\n"        /* new stack frame */
-      "\taddi\t%s11,%s11,8\n"
-      "\tmtctr\t%s0\n"
-      ".copyloop_%s:\n"
-      "\tlwzu\t%s0,4(%s12)\n"   /* copy stack frame with offset 8 */
-      "\tstwu\t%s0,4(%s11)\n"
-      "\tbdnz\t.copyloop_%s\n"
-      "\tstw\t%s10,8(%s1)\n",    /* last register into stack */
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix, name,
-      PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      name, PPCRegPrefix, PPCRegPrefix);
-    }
-    else if(ap->NumArgs >= 8)
-    {
-      stcksize = ((8 + (ap->NumArgs-7)*4 + 15) & (~15));
-      DoOutput(
-      "\tmflr\t%s0\n"
-      "\tstwu\t%s1,-%ld(%s1)\n"
-      "\tstw\t%s0,%ld(%s1)\n",
-      PPCRegPrefix, PPCRegPrefix, stcksize, PPCRegPrefix,
-      PPCRegPrefix, stcksize+4, PPCRegPrefix);
-    }
-    basereg = 3;
-  }
-  else if(flags & FUNCFLAG_TAG)
-  {
-    nrcopyar = ap->NumArgs > 8 ? 0 : 8 + 1 - ap->NumArgs;
-    stcksize = (((nrcopyar + 2 + 3)&(~3))-nrcopyar)*4;
-  }
-  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-  {
-    DoOutput("\tstwu\t%s1,-%ld(%s1)\n"
-             "\tmflr\t%s0\n",
-    PPCRegPrefix, stcksize+nrcopyar*4, PPCRegPrefix, PPCRegPrefix);
-  }
-
-  if(nrcopyar)
-  {
-    /* Hack the stack-frame for varargs.
-       Build stack-frame, but save LR in our own stack-frame,
-       because we have to overwrite the lower 8 bytes of the
-       caller's frame. */
-    /* Save the caller's saved SP in our own stack-frame. */
-    DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n", PPCRegPrefix,
-    stcksize+nrcopyar*4, PPCRegPrefix, PPCRegPrefix, stcksize, PPCRegPrefix);
-
-    /* Store r3-r8 at the top of our stack-frame and r9-r10
-       at the low 8 bytes of the caller's frame. This way all
-       arguments will reside in one continuous area.
-       Only copy the really relevant parts. */
-    for(i = 10; i > 10-nrcopyar; --i)
-      DoOutput("\tstw\t%s%ld,%ld(%s1)\n", PPCRegPrefix, i,
-      stcksize+4*(i-1+nrcopyar-8),PPCRegPrefix);
-  }
-
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    if(flags & FUNCFLAG_TAG || ap->NumArgs >= 8)
-    {
-      for(i = ap->NumArgs-1; i; --i)
-      {
-        if(i < 7)
-        {
-          DoOutput("\tmr\t%s%ld,%s%ld\n",PPCRegPrefix, 3+i, PPCRegPrefix,
-          3+i-1);
-        }
-        else if(i == 7)
-        {
-          DoOutput("\tstw\t%s10,8(%s1)\n", PPCRegPrefix, PPCRegPrefix);
-        }
-        else
-        {
-          DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n",
-          PPCRegPrefix, stcksize+((i-8)+3)*4, PPCRegPrefix, PPCRegPrefix,
-          ((i-8)+3)*4, PPCRegPrefix);
-        }
-      }
-    }
-    else
-    {
-      /* shift all the arguments one field */
-      for(i = ap->NumArgs+3; i > 3; --i)
-      {
-        DoOutput("\tmr\t%s%ld,%s%ld\n",PPCRegPrefix, i, PPCRegPrefix, i-1);
-      }
-    }
-  }
-
-  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-    DoOutput("\tstw\t%s0,%ld(%s1)\n", PPCRegPrefix, stcksize+4, PPCRegPrefix);
-
-  if(BaseName)
+  if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
   {
     if(Flags & FLAG_SMALLDATA)
-      DoOutput("\tlwz\t%s%ld,%s@sdarx(%s13)\n", PPCRegPrefix, basereg,
-      BaseName, PPCRegPrefix);
+      DoOutput("\tlwz\t%s11,%s@sdarx(%s13)\n",
+               PPCRegPrefix, BaseName, PPCRegPrefix);
     else
-      DoOutput("\tlis\t%s%ld,%s@ha\n\tlwz\t%s%ld,%s@l(%s%ld)\n",
-      PPCRegPrefix, basereg, BaseName, PPCRegPrefix, basereg, BaseName,
-      PPCRegPrefix, basereg);
+      DoOutput("\tlis\t%s12,%s@ha\n"
+               "\tlwz\t%s11,%s@l(%s12)\n",
+               PPCRegPrefix, BaseName, PPCRegPrefix, BaseName, PPCRegPrefix);
+
+    DoOutput("\tlwz\t%s0,-%d(%s11)\n\tmtctr\t%s0\n\tbctr\n",
+             PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
   }
 
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    DoOutput("\tlwz\t%s0,-%d(%s3)\n\tmtlr\t%s0\n\tblrl\n",
-    PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
-  }
   else
   {
-    for(i = 0; i < ap->NumArgs; ++i)
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
     {
-      if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
+      if(flags & FUNCFLAG_TAG)
       {
-        if(i <= 7)
-          DoOutput("\tstw\t%s%ld,", PPCRegPrefix, i+3);
-        else
-          DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,", PPCRegPrefix,
-          stcksize+(i+2-8)*4, PPCRegPrefix, PPCRegPrefix);
+        DoOutput(
+        "\tmflr\t%s0\n"
+        "\tlwz\t%s11,0(%s1)\n"    /* backchain to next frame */
+        "\tsub\t%s12,%s11,%s1\n"  /* difference = size of frame to copy */
+        "\tstw\t%s0,4(%s1)\n"
+        "\tsub\t%s11,%s1,%s12\n"
+        "\tsubi\t%s11,%s11,16\n"  /* r11 Start of new frame, +16 size */
+        "\tstw\t%s1,0(%s11)\n"    /* Backchain to last frame */
+        "\tsrwi\t%s12,%s12,2\n"
+        "\tsubi\t%s0,%s12,2\n"    /* size/4-2 = number of longwords to copy */
+        "\taddi\t%s12,%s1,4\n"
+        "\tmr\t%s1,%s11\n"        /* new stack frame */
+        "\taddi\t%s11,%s11,8\n"
+        "\tmtctr\t%s0\n"
+        ".copyloop_%s:\n"
+        "\tlwzu\t%s0,4(%s12)\n"   /* copy stack frame with offset 8 */
+        "\tstwu\t%s0,4(%s11)\n"
+        "\tbdnz\t.copyloop_%s\n"
+        "\tstw\t%s10,8(%s1)\n",    /* last register into stack */
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix, name,
+        PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        name, PPCRegPrefix, PPCRegPrefix);
+      }
+      else if(ap->NumArgs >= 8)
+      {
+        stcksize = ((8 + (ap->NumArgs-7)*4 + 15) & (~15));
+        DoOutput(
+        "\tmflr\t%s0\n"
+        "\tstwu\t%s1,-%ld(%s1)\n"
+        "\tstw\t%s0,%ld(%s1)\n",
+        PPCRegPrefix, PPCRegPrefix, stcksize, PPCRegPrefix,
+        PPCRegPrefix, stcksize+4, PPCRegPrefix);
+      }
+      basereg = 3;
+    }
+    else if(flags & FUNCFLAG_TAG)
+    {
+      nrcopyar = ap->NumArgs > 8 ? 0 : 8 + 1 - ap->NumArgs;
+      stcksize = (((nrcopyar + 2 + 3)&(~3))-nrcopyar)*4;
+    }
+    if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+    {
+      DoOutput("\tstwu\t%s1,-%ld(%s1)\n"
+               "\tmflr\t%s0\n",
+      PPCRegPrefix, stcksize+nrcopyar*4, PPCRegPrefix, PPCRegPrefix);
+    }
+
+    if(nrcopyar)
+    {
+      /* Hack the stack-frame for varargs.
+         Build stack-frame, but save LR in our own stack-frame,
+         because we have to overwrite the lower 8 bytes of the
+         caller's frame. */
+      /* Save the caller's saved SP in our own stack-frame. */
+      DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n", PPCRegPrefix,
+      stcksize+nrcopyar*4, PPCRegPrefix, PPCRegPrefix, stcksize, PPCRegPrefix);
+
+      /* Store r3-r8 at the top of our stack-frame and r9-r10
+         at the low 8 bytes of the caller's frame. This way all
+         arguments will reside in one continuous area.
+         Only copy the really relevant parts. */
+      for(i = 10; i > 10-nrcopyar; --i)
+        DoOutput("\tstw\t%s%ld,%ld(%s1)\n", PPCRegPrefix, i,
+        stcksize+4*(i-1+nrcopyar-8),PPCRegPrefix);
+    }
+
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+    {
+      if(flags & FUNCFLAG_TAG || ap->NumArgs >= 8)
+      {
+        for(i = ap->NumArgs-1; i; --i)
+        {
+          if(i < 7)
+          {
+            DoOutput("\tmr\t%s%ld,%s%ld\n",PPCRegPrefix, 3+i, PPCRegPrefix,
+            3+i-1);
+          }
+          else if(i == 7)
+          {
+            DoOutput("\tstw\t%s10,8(%s1)\n", PPCRegPrefix, PPCRegPrefix);
+          }
+          else
+          {
+            DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n",
+            PPCRegPrefix, stcksize+((i-8)+3)*4, PPCRegPrefix, PPCRegPrefix,
+            ((i-8)+3)*4, PPCRegPrefix);
+          }
+        }
       }
       else
-        DoOutput("\taddi\t%s4,%s1,%ld\n\tstw\t%s4,", PPCRegPrefix,
-        PPCRegPrefix, stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0),
-        PPCRegPrefix);
-      DoOutput("%d(%s2)\n", 4*ap->Args[i].ArgReg, PPCRegPrefix);
+      {
+        /* shift all the arguments one field */
+        for(i = ap->NumArgs+3; i > 3; --i)
+        {
+          DoOutput("\tmr\t%s%ld,%s%ld\n",PPCRegPrefix, i, PPCRegPrefix, i-1);
+        }
+      }
     }
 
-    DoOutput("\tlwz\t%s11,100(%s2)\n",         /* EmulCallDirectOS */
-             PPCRegPrefix, PPCRegPrefix);
+    if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+      DoOutput("\tstw\t%s0,%ld(%s1)\n", PPCRegPrefix, stcksize+4, PPCRegPrefix);
 
-    /* store basepointer in A6 */
     if(BaseName)
-      DoOutput("\tstw\t%s12,56(%s2)\n", PPCRegPrefix, PPCRegPrefix);
-
-    /* Now place the real function call */
-    DoOutput("\tli\t%s3,-%d\n", /* store offset in EmulHandle */
-    PPCRegPrefix, ap->Bias);
-
-    DoOutput("\tmtlr\t%s11\n\tblrl\n", PPCRegPrefix);
-  }
-
-  if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
-  {
-    DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n",
-    PPCRegPrefix, stcksize, PPCRegPrefix, PPCRegPrefix,
-    stcksize+nrcopyar*4,PPCRegPrefix);
-  }
-
-  if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV) && ((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-  {
-    if(ap->NumArgs >= 8)
     {
-      DoOutput(
-      "\tlwz\t%s0,%ld(%s1)\n"
-      "\taddi\t%s1,%s1,%ld\n"
-      "\tmtlr\t%s0\n",
-      PPCRegPrefix,stcksize+4,PPCRegPrefix,PPCRegPrefix,PPCRegPrefix,
-      stcksize,PPCRegPrefix);
+      if(Flags & FLAG_SMALLDATA)
+        DoOutput("\tlwz\t%s%ld,%s@sdarx(%s13)\n", PPCRegPrefix, basereg,
+        BaseName, PPCRegPrefix);
+      else
+        DoOutput("\tlis\t%s%ld,%s@ha\n\tlwz\t%s%ld,%s@l(%s%ld)\n",
+        PPCRegPrefix, basereg, BaseName, PPCRegPrefix, basereg, BaseName,
+        PPCRegPrefix, basereg);
+    }
+
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+    {
+      DoOutput("\tlwz\t%s0,-%d(%s3)\n\tmtlr\t%s0\n\tblrl\n",
+      PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
     }
     else
     {
-      DoOutput(
-      "\tlwz\t%s1,0(%s1)\n"       /* restore old stack frame */
-      "\tlwz\t%s0,4(%s1)\n"
-      "\tmtlr\t%s0\n", PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-      PPCRegPrefix, PPCRegPrefix);
+      for(i = 0; i < ap->NumArgs; ++i)
+      {
+        if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
+        {
+          if(i <= 7)
+            DoOutput("\tstw\t%s%ld,", PPCRegPrefix, i+3);
+          else
+            DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,", PPCRegPrefix,
+            stcksize+(i+2-8)*4, PPCRegPrefix, PPCRegPrefix);
+        }
+        else
+          DoOutput("\taddi\t%s4,%s1,%ld\n\tstw\t%s4,", PPCRegPrefix,
+          PPCRegPrefix, stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0),
+          PPCRegPrefix);
+        DoOutput("%d(%s2)\n", 4*ap->Args[i].ArgReg, PPCRegPrefix);
+      }
+
+      DoOutput("\tlwz\t%s11,100(%s2)\n",         /* EmulCallDirectOS */
+               PPCRegPrefix, PPCRegPrefix);
+
+      /* store basepointer in A6 */
+      if(BaseName)
+        DoOutput("\tstw\t%s12,56(%s2)\n", PPCRegPrefix, PPCRegPrefix);
+
+      /* Now place the real function call */
+      DoOutput("\tli\t%s3,-%d\n", /* store offset in EmulHandle */
+      PPCRegPrefix, ap->Bias);
+
+      DoOutput("\tmtlr\t%s11\n\tblrl\n", PPCRegPrefix);
     }
-  }
-  else
-  {
-    DoOutput("\tlwz\t%s0,%ld(%s1)\n"
-           "\taddi\t%s1,%s1,%ld\n"
-           "\tmtlr\t%s0\n",
-    PPCRegPrefix, stcksize+4, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
-    stcksize+nrcopyar*4, PPCRegPrefix);
+
+    if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
+    {
+      DoOutput("\tlwz\t%s11,%ld(%s1)\n\tstw\t%s11,%ld(%s1)\n",
+      PPCRegPrefix, stcksize, PPCRegPrefix, PPCRegPrefix,
+      stcksize+nrcopyar*4,PPCRegPrefix);
+    }
+
+    if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV) && ((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+    {
+      if(ap->NumArgs >= 8)
+      {
+        DoOutput(
+        "\tlwz\t%s0,%ld(%s1)\n"
+        "\taddi\t%s1,%s1,%ld\n"
+        "\tmtlr\t%s0\n",
+        PPCRegPrefix,stcksize+4,PPCRegPrefix,PPCRegPrefix,PPCRegPrefix,
+        stcksize,PPCRegPrefix);
+      }
+      else
+      {
+        DoOutput(
+        "\tlwz\t%s1,0(%s1)\n"       /* restore old stack frame */
+        "\tlwz\t%s0,4(%s1)\n"
+        "\tmtlr\t%s0\n", PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+        PPCRegPrefix, PPCRegPrefix);
+      }
+    }
+    else
+    {
+      DoOutput("\tlwz\t%s0,%ld(%s1)\n"
+             "\taddi\t%s1,%s1,%ld\n"
+             "\tmtlr\t%s0\n",
+      PPCRegPrefix, stcksize+4, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
+      stcksize+nrcopyar*4, PPCRegPrefix);
+    }
+
+    DoOutput("\tblr\n");
   }
 
-  return DoOutput("\tblr\n\t.type\t%s,@function\n\t.size\t%s,$-%s\n\n",
+  return DoOutput("\t.type\t%s,@function\n\t.size\t%s,$-%s\n\n",
   name, name, name);
 }
 
@@ -8010,207 +8063,229 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   data3 = data;
 
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    if(flags & FUNCFLAG_TAG)
-    {
-      /* mflr r0 = mfspr r0,8 = get link register */
-      EndPutM32Inc(data, 0x7C0802A6);
-      /* backchain to next frame: lwz r11,0(r1) */
-      EndPutM32Inc(data, 0x81610000);
-      /* difference = size of frame to copy: sub r12,r11,r1 = subf r12,r1,r11 */
-      EndPutM32Inc(data, 0x7D815850);
-      EndPutM32Inc(data, 0x90010004); /* stw r0,4(r1) */
-      EndPutM32Inc(data, 0x7D6C0850); /* sub r11,r1,r12 */
-      /* subi r11,r11,16 - r11 Start of new frame, +16 size */
-      EndPutM32Inc(data, 0x396BFFF0);
-      EndPutM32Inc(data, 0x902B0000); /* stw r1,0(r11) - Backchain to last frame */
-      EndPutM32Inc(data, 0x558CF0BE); /* srwi r12,r12,2 */
-      /* subi r0,r12,2 - size/4-2 = number of longwords to copy */
-      EndPutM32Inc(data, 0x380CFFFE);
-      EndPutM32Inc(data, 0x39810004); /* addi r12,r1,4 */
-      EndPutM32Inc(data, 0x7D615B78); /* mr r1,r11 - new stack frame */
-      EndPutM32Inc(data, 0x396B0008); /* addi r11,r11,8 */
-      EndPutM32Inc(data, 0x7C0903A6); /* mtctr r0 */
-      /* .l: lwzu r0,4(r12) - copy stack frame with offset 8 */
-      EndPutM32Inc(data, 0x840C0004);
-      EndPutM32Inc(data, 0x940B0004); /* stwu r0,4(r11) */
-      EndPutM32Inc(data, 0x4200FFF8); /* bdnz .l */
-      /* stw r10,8(r1) - last register into stack */
-      EndPutM32Inc(data, 0x91410008);
-    }
-    else if(ap->NumArgs >= 8)
-    {
-      stcksize = ((8 + (ap->NumArgs-7)*4 + 15) & (~15));
-      EndPutM32Inc(data, 0x7C0802A6);                /* mflr r0 */
-      EndPutM32Inc(data, 0x94220000 - stcksize);     /* stwu r1,-X(r1) */
-      EndPutM32Inc(data, 0x90010000 + stcksize + 4); /* stw r0,Y(r1) */
-    }
-    basereg = 3;
-  }
-  else if(flags & FUNCFLAG_TAG)
-  {
-    nrcopyar = ap->NumArgs > 8 ? 0 : 8 + 1 - ap->NumArgs;
-    stcksize = (((nrcopyar + 2 + 3)&(~3))-nrcopyar)*4;
-  }
-
-  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-  {
-    EndPutM32Inc(data, 0x94210000+0x10000-(stcksize+nrcopyar*4)); /* stwu r1,-%d(r1) */
-    /* mflr r0 = mfspr r0,8 = get link register */
-    EndPutM32Inc(data, 0x7C0802A6);
-  }
-
-  if(nrcopyar)
-  {
-    /* Hack the stack-frame for varargs.
-       Build stack-frame, but save LR in our own stack-frame,
-       because we have to overwrite the lower 8 bytes of the
-       caller's frame. */
-    /* Save the caller's saved SP in our own stack-frame. */
-    EndPutM32Inc(data, 0x81610000+stcksize+nrcopyar*4);         /* lwz r11,%d(r1) */
-    EndPutM32Inc(data, 0x91610000+stcksize);                    /* stw r11,%d(r1) */
-
-    /* Store r3-r8 at the top of our stack-frame and r9-r10
-       at the low 8 bytes of the caller's frame. This way all
-       arguments will reside in one continuous area.
-       Only copy the really relevant parts. */
-    for(i = 10; i > 10-nrcopyar; --i)
-      EndPutM32Inc(data, 0x90010000 + (i<<21) + (stcksize+4*(i-1+nrcopyar-8))); /* stw rX,Y(r1) */
-  }
-
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    if(flags & FUNCFLAG_TAG || ap->NumArgs >= 8)
-    {
-      for(i = ap->NumArgs-1; i; --i)
-      {
-        if(i < 7)
-        {
-          /* mr rX,rY */
-          EndPutM32Inc(data, 0x7C000378 + ((3+i)<<21) + ((3+i-1)<<16) + ((3+i-1)<<11));
-        }
-        else if(i == 7)
-        {
-          /* stw r10,8(r1) */
-          EndPutM32Inc(data, 0x91410008);
-        }
-        else
-        {
-          /* lwz r11,X(r1) */
-          EndPutM32Inc(data, 0x81610000 + (stcksize+((i-8)+3)*4));
-          EndPutM32Inc(data, 0x91620000 + ((i-8)+3)*4); /* stw r11,j(r1) */
-        }
-      }
-    }
-    else
-    {
-      /* shift all the arguments one field */
-      for(i = ap->NumArgs+3; i > 3; --i)
-      {
-        /* mr rX,rY */
-        EndPutM32Inc(data, 0x7C000378 + (i<<21) + ((i-1)<<16) + ((i-1)<<11));
-      }
-    }
-  }
-
-  if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-    EndPutM32Inc(data, 0x90010000+stcksize+4); /* stw r0,%d(r1) */
-
-  if(BaseName)
+  if(ap->Flags & AMIPRAGFLAG_MOSSYSV)
   {
     if(Flags & FLAG_SMALLDATA)
     {
       k = (data-data3)+2;                                       /* store reloc offset */
-      EndPutM32Inc(data, 0x818D0000);                           /* lwz r12,BaseName@sdarx(r13) */
+      EndPutM32Inc(data, 0x816D0000);                           /* lwz r11,BaseName@sdarx(r13) */
     }
     else
-   {
+    {
       k = (data-data3)+2;                                       /* store reloc offset */
       EndPutM32Inc(data, 0x3D800000);                           /* lis r12,BaseName@ha = addis r12,0,BaseName@ha */
-      EndPutM32Inc(data, 0x818C0000);                           /* lwz r12,BaseName@l(r12) */
+      EndPutM32Inc(data, 0x816C0000);                           /* lwz r11,BaseName@l(r12) */
     }
+
+    EndPutM32Inc(data, 0x800c0000 - (ap->Bias-2));
+    EndPutM32Inc(data, 0x7c0903a6);                             /* mtctr r0 */
+    EndPutM32Inc(data, 0x4e800420);                             /* bctr */
   }
 
-  if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
-  {
-    /* lwz r0,X(r3) */
-    EndPutM32Inc(data, 0x80040000 - (ap->Bias-2));
-    /* mtlr r0 = mtspr 8,r0 = restore link register */
-    EndPutM32Inc(data, 0x7C0803A6);
-    EndPutM32Inc(data, 0x4E800021); /* blrl = bclrl 20,0 */
-  }
   else
   {
-    for(i = 0; i < ap->NumArgs; ++i)
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
     {
-      j = 4*ap->Args[i].ArgReg;
-      if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
+      if(flags & FUNCFLAG_TAG)
       {
-        if(i <= 7)
+        /* mflr r0 = mfspr r0,8 = get link register */
+        EndPutM32Inc(data, 0x7C0802A6);
+        /* backchain to next frame: lwz r11,0(r1) */
+        EndPutM32Inc(data, 0x81610000);
+        /* difference = size of frame to copy: sub r12,r11,r1 = subf r12,r1,r11 */
+        EndPutM32Inc(data, 0x7D815850);
+        EndPutM32Inc(data, 0x90010004); /* stw r0,4(r1) */
+        EndPutM32Inc(data, 0x7D6C0850); /* sub r11,r1,r12 */
+        /* subi r11,r11,16 - r11 Start of new frame, +16 size */
+        EndPutM32Inc(data, 0x396BFFF0);
+        EndPutM32Inc(data, 0x902B0000); /* stw r1,0(r11) - Backchain to last frame */
+        EndPutM32Inc(data, 0x558CF0BE); /* srwi r12,r12,2 */
+        /* subi r0,r12,2 - size/4-2 = number of longwords to copy */
+        EndPutM32Inc(data, 0x380CFFFE);
+        EndPutM32Inc(data, 0x39810004); /* addi r12,r1,4 */
+        EndPutM32Inc(data, 0x7D615B78); /* mr r1,r11 - new stack frame */
+        EndPutM32Inc(data, 0x396B0008); /* addi r11,r11,8 */
+        EndPutM32Inc(data, 0x7C0903A6); /* mtctr r0 */
+        /* .l: lwzu r0,4(r12) - copy stack frame with offset 8 */
+        EndPutM32Inc(data, 0x840C0004);
+        EndPutM32Inc(data, 0x940B0004); /* stwu r0,4(r11) */
+        EndPutM32Inc(data, 0x4200FFF8); /* bdnz .l */
+        /* stw r10,8(r1) - last register into stack */
+        EndPutM32Inc(data, 0x91410008);
+      }
+      else if(ap->NumArgs >= 8)
+      {
+        stcksize = ((8 + (ap->NumArgs-7)*4 + 15) & (~15));
+        EndPutM32Inc(data, 0x7C0802A6);                /* mflr r0 */
+        EndPutM32Inc(data, 0x94220000 - stcksize);     /* stwu r1,-X(r1) */
+        EndPutM32Inc(data, 0x90010000 + stcksize + 4); /* stw r0,Y(r1) */
+      }
+      basereg = 3;
+    }
+    else if(flags & FUNCFLAG_TAG)
+    {
+      nrcopyar = ap->NumArgs > 8 ? 0 : 8 + 1 - ap->NumArgs;
+      stcksize = (((nrcopyar + 2 + 3)&(~3))-nrcopyar)*4;
+    }
+
+    if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+    {
+      EndPutM32Inc(data, 0x94210000+0x10000-(stcksize+nrcopyar*4)); /* stwu r1,-%d(r1) */
+      /* mflr r0 = mfspr r0,8 = get link register */
+      EndPutM32Inc(data, 0x7C0802A6);
+    }
+
+    if(nrcopyar)
+    {
+      /* Hack the stack-frame for varargs.
+         Build stack-frame, but save LR in our own stack-frame,
+         because we have to overwrite the lower 8 bytes of the
+         caller's frame. */
+      /* Save the caller's saved SP in our own stack-frame. */
+      EndPutM32Inc(data, 0x81610000+stcksize+nrcopyar*4);         /* lwz r11,%d(r1) */
+      EndPutM32Inc(data, 0x91610000+stcksize);                    /* stw r11,%d(r1) */
+  
+      /* Store r3-r8 at the top of our stack-frame and r9-r10
+       at the low 8 bytes of the caller's frame. This way all
+       arguments will reside in one continuous area.
+       Only copy the really relevant parts. */
+      for(i = 10; i > 10-nrcopyar; --i)
+        EndPutM32Inc(data, 0x90010000 + (i<<21) + (stcksize+4*(i-1+nrcopyar-8))); /* stw rX,Y(r1) */
+    }
+
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+    {
+      if(flags & FUNCFLAG_TAG || ap->NumArgs >= 8)
+      {
+        for(i = ap->NumArgs-1; i; --i)
         {
-          EndPutM32Inc(data, 0x90020000 + ((i+3)<<21) + j);       /* stw rX,j(r2) */
-        }
-        else
-        {
-          EndPutM32Inc(data, 0x81610000 + (stcksize+(i+2-8)*4));  /* lwz r11,X(r1) = get data from stack */
-          EndPutM32Inc(data, 0x91620000 + j);                     /* stw r11,j(r1) */
+          if(i < 7)
+          {
+            /* mr rX,rY */
+            EndPutM32Inc(data, 0x7C000378 + ((3+i)<<21) + ((3+i-1)<<16) + ((3+i-1)<<11));
+          }
+          else if(i == 7)
+          {
+            /* stw r10,8(r1) */
+            EndPutM32Inc(data, 0x91410008);
+          }
+          else
+          {
+            /* lwz r11,X(r1) */
+            EndPutM32Inc(data, 0x81610000 + (stcksize+((i-8)+3)*4));
+            EndPutM32Inc(data, 0x91620000 + ((i-8)+3)*4); /* stw r11,j(r1) */
+          }
         }
       }
       else
       {
-        EndPutM32Inc(data, 0x38810000 + (stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0))); /* addi r4,r1,X */
-        EndPutM32Inc(data, 0x90820000 + j);                       /* stw r4,X(r2) */
+        /* shift all the arguments one field */
+        for(i = ap->NumArgs+3; i > 3; --i)
+        {
+          /* mr rX,rY */
+          EndPutM32Inc(data, 0x7C000378 + (i<<21) + ((i-1)<<16) + ((i-1)<<11));
+        }
       }
     }
-  }
 
-  EndPutM32Inc(data, 0x81620064);                               /* lwz r11,100(r2) */
+    if(!(ap->Flags & AMIPRAGFLAG_MOSBASESYSV) || !((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+      EndPutM32Inc(data, 0x90010000+stcksize+4); /* stw r0,%d(r1) */
 
-  if(BaseName)
-    EndPutM32Inc(data, 0x91820038);                             /* stw r12,56(r2) */
-
-  /* Now place the real function call */
-  EndPutM32Inc(data, 0x38600000 + 0x10000 - ap->Bias);          /* li r3,-(ap->Bias) = addi r3,0,-ap->Bias */
-
-  EndPutM32Inc(data, 0x7D6803A6);                               /* mtlr r11 = mtspr 8,r11 = restore link register */
-  EndPutM32Inc(data, 0x4E800021);                               /* blrl = bclrl 20,0 */
-
-  if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
-  {
-    EndPutM32Inc(data, 0x81610000 + stcksize);                  /* lwz r11,X(r1) */
-    EndPutM32Inc(data, 0x91610000 + (stcksize+nrcopyar*4));     /* stw r11,Y(r1) */
-  }
-
-  if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV) && ((flags & FUNCFLAG_TAG)
-  || ap->NumArgs >= 8))
-  {
-    if(ap->NumArgs >= 8)
+    if(BaseName)
     {
-      EndPutM32Inc(data, 0x80010000 + stcksize+4); /* lwz r0,X(r1) */
-      EndPutM32Inc(data, 0x38210000 + stcksize);   /* addi r1,r1,Y */
+      if(Flags & FLAG_SMALLDATA)
+      {
+        k = (data-data3)+2;                                       /* store reloc offset */
+        EndPutM32Inc(data, 0x818D0000);                           /* lwz r12,BaseName@sdarx(r13) */
+      }
+      else
+     {
+        k = (data-data3)+2;                                       /* store reloc offset */
+        EndPutM32Inc(data, 0x3D800000);                           /* lis r12,BaseName@ha = addis r12,0,BaseName@ha */
+        EndPutM32Inc(data, 0x818C0000);                           /* lwz r12,BaseName@l(r12) */
+      }
+    }
+
+    if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
+    {
+      /* lwz r0,X(r3) */
+      EndPutM32Inc(data, 0x80040000 - (ap->Bias-2));
       /* mtlr r0 = mtspr 8,r0 = restore link register */
       EndPutM32Inc(data, 0x7C0803A6);
+      EndPutM32Inc(data, 0x4E800021); /* blrl = bclrl 20,0 */
     }
     else
     {
-      /* restore old stack frame: lwz r1,0(r1) */
-      EndPutM32Inc(data, 0x80210000);
-      EndPutM32Inc(data, 0x80010004); /* lwz r0,4(r1) */
-      /* mtlr r0 = mtspr 8,r0 = restore link register */
-      EndPutM32Inc(data, 0x7C0803A6);
+      for(i = 0; i < ap->NumArgs; ++i)
+      {
+        j = 4*ap->Args[i].ArgReg;
+        if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
+        {
+          if(i <= 7)
+          {
+            EndPutM32Inc(data, 0x90020000 + ((i+3)<<21) + j);       /* stw rX,j(r2) */
+          }
+          else
+          {
+            EndPutM32Inc(data, 0x81610000 + (stcksize+(i+2-8)*4));  /* lwz r11,X(r1) = get data from stack */
+            EndPutM32Inc(data, 0x91620000 + j);                     /* stw r11,j(r1) */
+          }
+        }
+        else
+        {
+          EndPutM32Inc(data, 0x38810000 + (stcksize+8+(ap->NumArgs > 8 ? (ap->NumArgs-8)*4 : 0))); /* addi r4,r1,X */
+          EndPutM32Inc(data, 0x90820000 + j);                       /* stw r4,X(r2) */
+        }
+      }
     }
-  }
-  else
-  {
-    EndPutM32Inc(data, 0x80010000 + stcksize+4);                /* lwz r0,X(r1) */
-    EndPutM32Inc(data, 0x38210000 + (stcksize+nrcopyar*4));     /* addi r1,r1,Y */
-    EndPutM32Inc(data, 0x7C0803A6);                             /* mtlr r0 = mtspr 8,r0 = restore link register */
-  }
 
-  EndPutM32Inc(data, 0x4E800020);                               /* blr = bclr 20,0 */
+    EndPutM32Inc(data, 0x81620064);                               /* lwz r11,100(r2) */
+
+    if(BaseName)
+      EndPutM32Inc(data, 0x91820038);                             /* stw r12,56(r2) */
+
+    /* Now place the real function call */
+    EndPutM32Inc(data, 0x38600000 + 0x10000 - ap->Bias);          /* li r3,-(ap->Bias) = addi r3,0,-ap->Bias */
+
+    EndPutM32Inc(data, 0x7D6803A6);                               /* mtlr r11 = mtspr 8,r11 = restore link register */
+    EndPutM32Inc(data, 0x4E800021);                               /* blrl = bclrl 20,0 */
+
+    if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
+    {
+      EndPutM32Inc(data, 0x81610000 + stcksize);                  /* lwz r11,X(r1) */
+      EndPutM32Inc(data, 0x91610000 + (stcksize+nrcopyar*4));     /* stw r11,Y(r1) */
+    }
+
+    if((ap->Flags & AMIPRAGFLAG_MOSBASESYSV) && ((flags & FUNCFLAG_TAG)
+    || ap->NumArgs >= 8))
+    {
+      if(ap->NumArgs >= 8)
+      {
+        EndPutM32Inc(data, 0x80010000 + stcksize+4); /* lwz r0,X(r1) */
+        EndPutM32Inc(data, 0x38210000 + stcksize);   /* addi r1,r1,Y */
+        /* mtlr r0 = mtspr 8,r0 = restore link register */
+        EndPutM32Inc(data, 0x7C0803A6);
+      }
+      else
+      {
+        /* restore old stack frame: lwz r1,0(r1) */
+        EndPutM32Inc(data, 0x80210000);
+        EndPutM32Inc(data, 0x80010004); /* lwz r0,4(r1) */
+        /* mtlr r0 = mtspr 8,r0 = restore link register */
+        EndPutM32Inc(data, 0x7C0803A6);
+      }
+    }
+    else
+    {
+      EndPutM32Inc(data, 0x80010000 + stcksize+4);                /* lwz r0,X(r1) */
+      EndPutM32Inc(data, 0x38210000 + (stcksize+nrcopyar*4));     /* addi r1,r1,Y */
+      EndPutM32Inc(data, 0x7C0803A6);                             /* mtlr r0 = mtspr 8,r0 = restore link register */
+    }
+
+    EndPutM32Inc(data, 0x4E800020);                               /* blr = bclr 20,0 */
+  }
 
   memcpy(data, "\0.symtab\0.strtab\0.shstrtab\0.text\0.rela.text\0", 44);
   data += 44;  /* 1        9        17         27     33 */
@@ -8622,7 +8697,7 @@ uint32 FuncOS4PPC(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int32 i, noret = 0, registers;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
     return 1;
 
   Flags |= FLAG_DONE; /* We did something */
@@ -8737,7 +8812,7 @@ uint32 FuncOS4M68KCSTUB(struct AmiPragma *ap, uint32 flags, strptr name)
   if(ap->NumArgs <= 7)
     return 1;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
     return 1;
 
   if(!(cd = GetClibFunc(ap->FuncName, ap, flags)))
@@ -8778,7 +8853,7 @@ uint32 FuncOS4M68K(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int i;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
     return 1;
 
   if(!(cd = GetClibFunc(ap->FuncName, ap, flags)))
@@ -8889,7 +8964,7 @@ uint32 FuncOS4M68K(struct AmiPragma *ap, uint32 flags, strptr name)
 
 uint32 FuncOS4M68KVect(struct AmiPragma *ap, uint32 flags, strptr name)
 {
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
     return 1;
 
   while(LastBias + BIAS_OFFSET < ap->Bias)
@@ -8907,7 +8982,7 @@ uint32 FuncXML(struct AmiPragma *ap, uint32 flags, strptr name)
   struct ClibData *cd;
   int32 i;
 
-  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV))
+  if(CheckError(ap, AMIPRAGFLAG_PPC|AMIPRAGFLAG_MOSBASESYSV|AMIPRAGFLAG_MOSSYSV))
     return 1;
 
   if(flags & FUNCFLAG_ALIAS)

@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.180 (07.12.2004) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.181 (20.12.2004) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -282,6 +282,8 @@ static const char version[] =
  2.179 09.11.04 : (phx) make it compile natively under AmigaOS 4.x
  2.180 07.12.04 : (phx) don't create vbcc inlines for MUI_NewObject &
         PM_MakeItem - otherwise the preprocessor gets confused
+ 2.181 20.12.04 : made test for MUI_NewObject and PM_MakeItem based on a field
+        containing the names - allows easier expansion
 */
 
 /* A short note, how fd2pragma works.
@@ -1659,6 +1661,16 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {0,0},
 };
 
+/* This field contains functions, which should not be created as inlines with
+some targets. At the moment these are varargs functions, which are used in
+the MUI style using complicated defines. Theses functions are disabled in
+certain GCC and VBCC environments. */
+static const strptr NoCreateInlineFuncs[] = {
+"MUI_NewObject",
+"PM_MakeItem",
+0,
+};
+
 /* For double tagcall names (currently only necessary for dos.library and
 datatypes.library). Only one alias supported for a function! */
 static const struct Pragma_AliasName Pragma_AliasNames[] = {
@@ -1793,6 +1805,17 @@ static strptr SkipName(strptr OldPtr)
   while(isalnum(*OldPtr) || *OldPtr == '_')
     ++OldPtr;
   return OldPtr;
+}
+
+static int IsNoCreateInlineFunc(const strptr name)
+{
+  const strptr *a;
+  for(a = NoCreateInlineFuncs; *a; ++a)
+  {
+    if(!strcmp(name, *a))
+      return 1;
+  }
+  return 0;
 }
 
 static uint32 GetTypes(void)
@@ -5202,8 +5225,8 @@ uint32 FuncInlineDirect(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
-    /* do not create MUI_NewObject */
-    if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
+    /* do not create some strange functions */
+    if(IsNoCreateInlineFunc(name))
       DoOutput("#if !defined(NO_INLINE_STDARG) "
       "&& defined(SPECIALMACRO_INLINE_STDARG)\n");
     else
@@ -5523,7 +5546,7 @@ uint32 FuncInline(struct AmiPragma *ap, uint32 flags, strptr name)
     {
       DoOutput("#ifndef NO_%sINLINE_STDARG\n",
       Flags & (FLAG_POWERUP|FLAG_MORPHOS) ? "PPC" : "");
-      if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
+      if(IsNoCreateInlineFunc(name))
       {
         DoOutput("__inline ");
         FuncCSTUBS(ap, flags, name);
@@ -6327,8 +6350,8 @@ uint32 FuncVBCCInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
-    if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
-      return 1;    /* do not create MUI_NewObject */
+    if(IsNoCreateInlineFunc(name))
+      return 1; /* do not create some strange functions */
     DoOutput("#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && "
     "(__STDC_VERSION__ >= 199901L)\n");
   }
@@ -6572,8 +6595,8 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
 
   if(flags & FUNCFLAG_TAG)
   {
-    if(!strcmp(name, "MUI_NewObject") || !strcmp(name, "PM_MakeItem"))
-      return 1;    /* do not create MUI_NewObject */
+    if(IsNoCreateInlineFunc(name))
+      return 1; /* do not create some strange functions */
     DoOutput("#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && "
     "(__STDC_VERSION__ >= 199901L)\n");
   }

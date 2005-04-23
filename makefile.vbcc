@@ -5,6 +5,7 @@ COPTS = -DFD2PRAGMA_READARGS -DFD2PRAGMA_AMIGA
 
 all: fd2pragma_os3 fd2pragma_os4 fd2pragma_mos
 
+
 fd2pragma_os3: fd2pragma.c
 	$(CC68K) -o $@ $(COPTS) fd2pragma.c
 

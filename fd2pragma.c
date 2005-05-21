@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.188 (30.03.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.189 (21.05.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -309,6 +309,7 @@ static const char version[] =
         SDLNet_GenericSocket, TTF_Font.
         Put some of SDL-gfx functions ("...RGBA()") in the exceptions list.
  2.188 30.03.05 : (phx) Put NewObject() into the NoInline-list.
+ 2.189 21.05.05 : (phx) Always include emul/emulregs.h in vbcc/MOS inlines.
 */
 
 /* A short note, how fd2pragma works.
@@ -11089,6 +11090,12 @@ static uint32 CreateVBCCInline(uint32 mode, uint32 callmode)
   ShortBaseNameUpper, ShortBaseNameUpper);
 
   DoOutput("\n#ifndef EXEC_TYPES_H\n#include <exec/types.h>\n#endif\n");
+  if (mode == 2)
+  {
+    /* always include emul/emulregs.h in MorphOS inlines,
+       gcc-based sources might depend on it :| */
+    DoOutput("#ifndef EMUL_EMULREGS_H\n#include <emul/emulregs.h>\n#endif\n");
+  }
 
   if(HEADER)
   {

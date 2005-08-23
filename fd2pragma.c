@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.189 (21.05.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.190 (23.08.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -310,6 +310,8 @@ static const char version[] =
         Put some of SDL-gfx functions ("...RGBA()") in the exceptions list.
  2.188 30.03.05 : (phx) Put NewObject() into the NoInline-list.
  2.189 21.05.05 : (phx) Always include emul/emulregs.h in vbcc/MOS inlines.
+ 2.190 23.08.05 : (phx) Use ".file <name>.o" in assembler sources, HUNK_NAME
+        and ELF ST_FILE symbols. It was "<name>.s" before, which is wrong.
 */
 
 /* A short note, how fd2pragma works.
@@ -4717,11 +4719,11 @@ uint32 FuncAsmCode(struct AmiPragma *ap, uint32 flags, strptr name)
   registers = GetRegisterData(ap);
   fregs = GetFRegisterData(ap);
 
-  i = strlen(name);
+  i = strlen(name) + 2;
   EndPutM32(tempbuf, HUNK_UNIT);
   EndPutM32(tempbuf+4, (i+3)>>2);
   DoOutputDirect(tempbuf, 8);
-  DoOutputDirect(name, i);
+  DoOutput("%s.o", name);
   DoOutputDirect("\0\0\0", ((i+3)&(~3))-i);
 
   i = strlen(hunkname);
@@ -5037,11 +5039,11 @@ uint32 FuncLocCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   Flags |= FLAG_DONE; /* We did something */
 
-  i = strlen(name);
+  i = strlen(name) + 2;
   EndPutM32(tempbuf, HUNK_UNIT);
   EndPutM32(tempbuf+4, (i+3)>>2);
   DoOutputDirect(tempbuf, 8);
-  DoOutputDirect(name, i);
+  DoOutput("%s.o", name);
   DoOutputDirect("\0\0\0", ((i+3)&(~3))-i);
 
   i = strlen(hunkname);
@@ -6953,7 +6955,7 @@ uint32 FuncVBCCWOSText(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t.section %s,\"acrx4\"\n", hunkname);
 
   if(Flags & FLAG_SINGLEFILE)
-    DoOutput("\t.file\t\"%s.s\"\n", name);
+    DoOutput("\t.file\t\"%s.o\"\n", name);
   DoOutput("\t.align\t3\n");
   if(Flags & FLAG_WOSLIBBASE)  /* PPCBase already in r3, LibBase in r4 */
   {
@@ -7199,13 +7201,11 @@ uint32 FuncVBCCWOSCode(struct AmiPragma *ap, uint32 flags, strptr name)
 
   Flags |= FLAG_DONE; /* We did something */
 
-  i = strlen(name);
-  if(Flags & FLAG_WOSLIBBASE)
-   ++i;
+  i = strlen(name) + 2;
   EndPutM32(tempbuf, HUNK_UNIT);
   EndPutM32(tempbuf+4, (i+3)>>2);
   DoOutputDirect(tempbuf, 8);
-  DoOutput("%s%s", Flags & FLAG_WOSLIBBASE ? "_" : "", name);
+  DoOutput("%s.o", name);
   DoOutputDirect("\0\0\0", ((i+3)&(~3))-i);
 
   i = strlen(hunkname);
@@ -7496,7 +7496,7 @@ uint32 FuncVBCCPUPText(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t.section %s,\"acrx4\"\n", hunkname);
 
   if(Flags & FLAG_SINGLEFILE)
-    DoOutput("\t.file\t\"%s.s\"\n", name);
+    DoOutput("\t.file\t\"%s.o\"\n", name);
   if(BaseName)
     DoOutput("\t.global %s\n", BaseName);
   DoOutput("\t.global PPCCallOS\n\t.global %s\n"
@@ -7805,7 +7805,7 @@ uint32 FuncVBCCPUPCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.s", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */
@@ -7939,7 +7939,7 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\t.section %s,\"acrx4\"\n", hunkname);
 
   if(Flags & FLAG_SINGLEFILE)
-    DoOutput("\t.file\t\"%s.s\"\n", name);
+    DoOutput("\t.file\t\"%s.o\"\n", name);
   if(BaseName)
     DoOutput("\t.global %s\n", BaseName);
   DoOutput("\t.global %s\n\t.align\t4\n%s:\n",name, name);
@@ -8529,7 +8529,7 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
   *(data2++) = 0;                                               /* esym[1].st_other */
   EndPutM16Inc(data2, SHN_ABS);                                 /* esym[1].st_shndx */
 
-  sprintf((strptr)data+i, "%s.s", name); while(data[i++]) ; /* get next store space */
+  sprintf((strptr)data+i, "%s.o", name); while(data[i++]) ; /* get next store space */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_name */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_value */
   EndPutM32Inc(data2, 0);                                       /* esym[2].st_size */

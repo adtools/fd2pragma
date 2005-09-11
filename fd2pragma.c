@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.190 (23.08.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.191 (11.09.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -312,6 +312,8 @@ static const char version[] =
  2.189 21.05.05 : (phx) Always include emul/emulregs.h in vbcc/MOS inlines.
  2.190 23.08.05 : (phx) Use ".file <name>.o" in assembler sources, HUNK_NAME
         and ELF ST_FILE symbols. It was "<name>.s" before, which is wrong.
+ 2.191 11.09.05 : (phx) Rewrote FuncVBCCWOSInline() based on the MOSInline-
+        function, to be able to handle varargs functions correctly.
 */
 
 /* A short note, how fd2pragma works.
@@ -6619,7 +6621,7 @@ uint32 FuncVBCCInline(struct AmiPragma *ap, uint32 flags, strptr name)
 uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
 {
   struct ClibData *cd;
-  int32 i;
+  int32 i, k;
 
   if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_M68K))
     return 1;
@@ -6627,90 +6629,126 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
   if(!(cd = GetClibFunc(name, ap, flags)))
     return 1;
 
-  if(!BaseName)
-  {
-    DoError(ERR_MISSING_BASENAME, ap->Line);
-    return 1;
-  }
-
   Flags |= FLAG_DONE; /* We did something */
 
-  if(!(flags & FUNCFLAG_ALIAS))
+  if(flags & FUNCFLAG_TAG)
   {
-    OutClibType(&cd->ReturnType, 0);
-    DoOutput(" __%s("/*)*/, name);
-
-    if(!(ap->Flags & (AMIPRAGFLAG_PPC0|AMIPRAGFLAG_PPC2)))
-    {
-      DoOutput("%s", GetBaseType());
-      if(ap->NumArgs)
-        DoOutput(", ");
-    }
-
-    for(i = 0; i < ap->NumArgs; ++i)
-    {
-      OutClibType(&cd->Args[i], ap->Args[i].ArgName);
-      if(i < ap->NumArgs-1)
-        DoOutput(", ");
-    }
-
-    DoOutput(/*(*/")=\"");
-    if(ap->Flags & AMIPRAGFLAG_PPC0)
-    {
-      DoOutput("\\t.extern\\t_%s\\n"
-               "\\tlwz\\t%s11,_%s(%s2)\\n"
-               "\\tlwz\\t%s0,-%d(%s11)\\n"
-               "\\tmtlr\\t%s0\\n"
-               "\\tblrl",
-               BaseName, PPCRegPrefix, BaseName, PPCRegPrefix, PPCRegPrefix,
-               ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
-    }
-    else if(ap->Flags & AMIPRAGFLAG_PPC2)
-    {
-      DoOutput("\\tstw\\t%s2,20(%s1)\\n"
-               "\\t.extern\\t_%s\\n"
-               "\\tlwz\\t%s2,_%s(%s2)\\n"
-               "\\tlwz\\t%s0,-%d(%s2)\\n"
-               "\\tmtlr\\t%s0\\n"
-               "\\tblrl\\n"
-               "\\tlwz\\t%s2,20(%s1)",
-               PPCRegPrefix, PPCRegPrefix, BaseName, PPCRegPrefix, BaseName,
-               PPCRegPrefix, PPCRegPrefix, ap->Bias-2, PPCRegPrefix,
-               PPCRegPrefix, PPCRegPrefix, PPCRegPrefix);
-    }
-    else
-    {
-      DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
-               "\\tmtlr\\t%s0\\n"
-               "\\tblrl",
-               PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
-    }
-  
-    DoOutput("\";\n");
+    if(IsNoCreateInlineFunc(name))
+      return 1; /* do not create some strange functions */
+    DoOutput("#if !defined(NO_INLINE_STDARG) && (__STDC__ == 1L) && "
+    "(__STDC_VERSION__ >= 199901L)\n");
   }
 
+  if(flags & FUNCFLAG_ALIAS)
+  {
+    DoOutput("#define %s("/*)*/, name);
+    for(i = 0; i < ap->NumArgs-1; ++i)
+      DoOutput("%s, ", ap->Args[i].ArgName);
+    DoOutput(/*(*/"%s) __%s("/*)*/, ap->Args[i].ArgName, ap->FuncName);
+    for(i = 0; i < ap->NumArgs; ++i)
+      DoOutput("(%s), ", ap->Args[i].ArgName);
+    return DoOutput(/*(*/"%s)\n%s\n", BaseName, flags & FUNCFLAG_TAG ?
+    "#endif\n" : "");
+  }
+
+  OutClibType(&cd->ReturnType, 0);
+  DoOutput(" __%s("/*)*/, name);
+
+  if(!(ap->Flags & (AMIPRAGFLAG_PPC0|AMIPRAGFLAG_PPC2)))
+  {
+    DoOutput("%s", GetBaseType());
+    if(ap->NumArgs)
+      DoOutput(", ");
+  }
+
+  k = (flags & FUNCFLAG_TAG) ? ap->NumArgs-1 : ap->NumArgs;
+  for(i = 0; i < k; ++i)
+  {
+    OutClibType(&cd->Args[i], ap->Args[i].ArgName);
+    if(i < ap->NumArgs-1)
+      DoOutput(", ");
+  }
+
+  if(flags & FUNCFLAG_TAG)
+  {
+#if 0 /* @@@ ? */
+    if(cd->Args[k].Type != CPP_TYPE_VARARGS)
+    {
+      OutClibType(&cd->Args[k], ap->Args[k].ArgName);
+      DoOutput(", ");
+    }
+#endif
+    DoOutput("...");
+  }
+
+  DoOutput(/*(*/")=\"");
+  if(ap->Flags & AMIPRAGFLAG_PPC0)
+  {
+    DoOutput("\\t.extern\\t_%s\\n"
+             "\\tlwz\\t%s11,_%s(%s2)\\n"
+             "\\tlwz\\t%s0,-%d(%s11)\\n"
+             "\\tmtlr\\t%s0\\n"
+             "\\tblrl",
+             BaseName, PPCRegPrefix, BaseName, PPCRegPrefix, PPCRegPrefix,
+             ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
+  }
+  else if(ap->Flags & AMIPRAGFLAG_PPC2)
+  {
+    DoOutput("\\tstw\\t%s2,20(%s1)\\n"
+             "\\t.extern\\t_%s\\n"
+             "\\tlwz\\t%s2,_%s(%s2)\\n"
+             "\\tlwz\\t%s0,-%d(%s2)\\n"
+             "\\tmtlr\\t%s0\\n"
+             "\\tblrl\\n"
+             "\\tlwz\\t%s2,20(%s1)",
+             PPCRegPrefix, PPCRegPrefix, BaseName, PPCRegPrefix, BaseName,
+             PPCRegPrefix, PPCRegPrefix, ap->Bias-2, PPCRegPrefix,
+             PPCRegPrefix, PPCRegPrefix, PPCRegPrefix);
+  }
+  else
+  {
+    DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
+             "\\tmtlr\\t%s0\\n"
+             "\\tblrl",
+             PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
+  }
+  DoOutput("\";\n");
+
+  k = (flags & FUNCFLAG_TAG) ? ap->NumArgs-2 : ap->NumArgs;
   DoOutput("#define %s("/*)*/, name);
-  for(i = 0; i < ap->NumArgs; ++i)
+  for(i = 0; i < k; ++i)
   {
     DoOutput("%s", ap->Args[i].ArgName);
     if(i < ap->NumArgs-1)
       DoOutput(", ");
   }
-  DoOutput(/*(*/") __%s("/*)*/, ap->FuncName);
+  if(flags & FUNCFLAG_TAG)
+  {
+    if(ap->NumArgs > 1 && cd->Args[ap->NumArgs-1].Type != CPP_TYPE_VARARGS)
+      DoOutput("%s, ", ap->Args[k].ArgName);
+    DoOutput("...");
+  }
+  DoOutput(/*(*/") __%s("/*)*/, name);
   if(!(ap->Flags & (AMIPRAGFLAG_PPC0|AMIPRAGFLAG_PPC2)))
   {
     DoOutput("%s", BaseName);
     if(ap->NumArgs)
       DoOutput(", ");
   }
-  for(i = 0; i < ap->NumArgs; ++i)
+  for(i = 0; i < k; ++i)
   {
     DoOutput("(%s)", ap->Args[i].ArgName);
     if(i < ap->NumArgs-1)
       DoOutput(", ");
   }
+  if(flags & FUNCFLAG_TAG)
+  {
+    if(ap->NumArgs > 1 && cd->Args[ap->NumArgs-1].Type != CPP_TYPE_VARARGS)
+      DoOutput("(%s), ", ap->Args[k].ArgName);
+    DoOutput("__VA_ARGS__");
+  }
 
-  return DoOutput(/*(*/")\n\n");
+  return DoOutput(/*(*/")\n%s\n", flags & FUNCFLAG_TAG ? "#endif\n" : "");
 }
 
 uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)

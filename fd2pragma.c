@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.191 (11.09.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.191 (01.11.2005) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -312,8 +312,9 @@ static const char version[] =
  2.189 21.05.05 : (phx) Always include emul/emulregs.h in vbcc/MOS inlines.
  2.190 23.08.05 : (phx) Use ".file <name>.o" in assembler sources, HUNK_NAME
         and ELF ST_FILE symbols. It was "<name>.s" before, which is wrong.
- 2.191 11.09.05 : (phx) Rewrote FuncVBCCWOSInline() based on the MOSInline-
+ 2.191 01.11.05 : (phx) Rewrote FuncVBCCWOSInline() based on the MOSInline-
         function, to be able to handle varargs functions correctly.
+        Also fixed WOS-text and -code generation for PPC0-ABI. 
 */
 
 /* A short note, how fd2pragma works.
@@ -6661,39 +6662,38 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
       DoOutput(", ");
   }
 
-  k = (flags & FUNCFLAG_TAG) ? ap->NumArgs-1 : ap->NumArgs;
+  k = ap->NumArgs;
   for(i = 0; i < k; ++i)
   {
     OutClibType(&cd->Args[i], ap->Args[i].ArgName);
-    if(i < ap->NumArgs-1)
+    if(i < k-1)
       DoOutput(", ");
   }
-
   if(flags & FUNCFLAG_TAG)
-  {
-#if 0 /* @@@ ? */
-    if(cd->Args[k].Type != CPP_TYPE_VARARGS)
-    {
-      OutClibType(&cd->Args[k], ap->Args[k].ArgName);
-      DoOutput(", ");
-    }
-#endif
-    DoOutput("...");
-  }
+    DoOutput(", ...");  /* a standalone ... is not allowed in C */
 
   DoOutput(/*(*/")=\"");
   if(ap->Flags & AMIPRAGFLAG_PPC0)
   {
-    DoOutput("\\t.extern\\t_%s\\n"
-             "\\tlwz\\t%s11,_%s(%s2)\\n"
+    DoOutput("\\t.extern\\t_%s\\n", BaseName);
+    if ((flags & FUNCFLAG_TAG) && k>0)
+    {
+      /* save tag1 and load taglist-pointer */
+      DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
+               "\\taddi\\t%s%d,%s1,%d\\n",
+      PPCRegPrefix, k+2, 20+k*4, PPCRegPrefix, PPCRegPrefix,
+      k+2, PPCRegPrefix, 20+k*4);
+    }
+    DoOutput("\\tlwz\\t%s11,_%s(%s2)\\n"
              "\\tlwz\\t%s0,-%d(%s11)\\n"
              "\\tmtlr\\t%s0\\n"
              "\\tblrl",
-             BaseName, PPCRegPrefix, BaseName, PPCRegPrefix, PPCRegPrefix,
+             PPCRegPrefix, BaseName, PPCRegPrefix, PPCRegPrefix,
              ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
   }
   else if(ap->Flags & AMIPRAGFLAG_PPC2)
   {
+    /* @@@ tagcall handling? */
     DoOutput("\\tstw\\t%s2,20(%s1)\\n"
              "\\t.extern\\t_%s\\n"
              "\\tlwz\\t%s2,_%s(%s2)\\n"
@@ -6707,6 +6707,14 @@ uint32 FuncVBCCWOSInline(struct AmiPragma *ap, uint32 flags, strptr name)
   }
   else
   {
+    if ((flags & FUNCFLAG_TAG) && k>0)
+    {
+      /* save tag1 and load taglist-pointer */
+      DoOutput("\\tstw\\t%s%d,%d(%s1)\\n"
+               "\\taddi\\t%s%d,%s1,%d\\n",
+      PPCRegPrefix, k+3, 24+k*4, PPCRegPrefix, PPCRegPrefix,
+      k+3, PPCRegPrefix, 24+k*4);
+    }
     DoOutput("\\tlwz\\t%s0,-%d(%s3)\\n"
              "\\tmtlr\\t%s0\\n"
              "\\tblrl",
@@ -7030,11 +7038,17 @@ uint32 FuncVBCCWOSText(struct AmiPragma *ap, uint32 flags, strptr name)
   }
   else if(ap->Flags & AMIPRAGFLAG_PPC0)
   {
-    DoOutput("\tmflr\t%s0\n"
-             "\tstw\t%s3,24(%s1)\n"   /* save tag1 */
-             "\tstw\t%s0,8(%s1)\n"    /* store LR */
-             "\tstwu\t%s1,-32(%s1)\n" /* new stack frame */
-             "\taddi\t%s3,%s1,24\n"   /* TagItem pointer */
+    DoOutput("\tmflr\t%s0\n", PPCRegPrefix);
+    if((flags & FUNCFLAG_TAG) && ap->NumArgs>0)
+    {
+      DoOutput("\tstw\t%s%d,%d(%s1)\n"  /* store first tag */
+               "\taddi\t%s%d,%s1,%d\n", /* TagItem pointer */
+      PPCRegPrefix, (int)ap->NumArgs+2,
+      20+(int)ap->NumArgs*4, PPCRegPrefix, PPCRegPrefix,
+      (int)ap->NumArgs+2, PPCRegPrefix, 20+(int)ap->NumArgs*4);
+    }
+    DoOutput("\tstw\t%s0,8(%s1)\n"      /* store LR */
+             "\tstwu\t%s1,-32(%s1)\n"   /* new stack frame */
              "\tlwz\t%s11,_%s(%s2)\n"
              "\tlwz\t%s0,-%d(%s11)\n"
              "\tmtlr\t%s0\n"
@@ -7043,7 +7057,6 @@ uint32 FuncVBCCWOSText(struct AmiPragma *ap, uint32 flags, strptr name)
              "\taddi\t%s1,%s1,32\n"
              "\tmtlr\t%s0\n"
              "\tblr\n",
-    PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
     PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix,
     BaseName, PPCRegPrefix, PPCRegPrefix, ap->Bias-2, PPCRegPrefix,
     PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, PPCRegPrefix, 
@@ -7278,10 +7291,15 @@ uint32 FuncVBCCWOSCode(struct AmiPragma *ap, uint32 flags, strptr name)
     basepos = data;
     /* mflr r0 = mfspr r0,8 = get link register */
     EndPutM32Inc(data, 0x7C0802A6);
-    EndPutM32Inc(data, 0x90610018);             /* stw r3,24(r1) */
+    if((flags & FUNCFLAG_TAG) && ap->NumArgs>0)
+    {
+      EndPutM32Inc(data, 0x90010000 + (((uint32)ap->NumArgs+2) << 21) +
+                   (uint32)(20+ap->NumArgs*4)); /* stw rN,d(r1) */
+      EndPutM32Inc(data, 0x38010000 + (((uint32)ap->NumArgs+2) << 21) +
+                   (uint32)(20+ap->NumArgs*4)); /* addi rN,r1,d */
+    }
     EndPutM32Inc(data, 0x90010008);             /* stw r0,8(r1) */
     EndPutM32Inc(data, 0x9421FFCE);             /* stwu r1,-32(r1) */
-    EndPutM32Inc(data, 0x38610018);             /* addi r3,r1,24 */
     EndPutM32Inc(data, 0x81620000);             /* lwz r11,BaseName(r2) */
     EndPutM32Inc(data, 0x800C0000-(ap->Bias-2));/* lwz r0,-ap->Bias-2(r11) */
     EndPutM32Inc(data, 0x7C0803A6);             /* mtlr r0 = mtspr 8,r0 = store link register */

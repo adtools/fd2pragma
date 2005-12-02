@@ -1,9 +1,11 @@
 CC68K = vc +aos68k_powerup
 CCOS4 = vc +aosppc_powerup
 CCMOS = vc +morphos_powerup
-COPTS = -DFD2PRAGMA_READARGS -DFD2PRAGMA_AMIGA
+COPTS = -DFD2PRAGMA_AMIGA
 
 all: fd2pragma_os3 fd2pragma_os4 fd2pragma_mos
+
+rdargs: fd2pragma_rdargs_os3 fd2pragma_rdargs_os4 fd2pragma_rdargs_mos
 
 
 fd2pragma_os3: fd2pragma.c
@@ -14,3 +16,12 @@ fd2pragma_os4: fd2pragma.c
 
 fd2pragma_mos: fd2pragma.c
 	$(CCMOS) -o $@ $(COPTS) fd2pragma.c
+
+fd2pragma_rdargs_os3: fd2pragma.c
+	$(CC68K) -o $@ -DFD2PRAGMA_READARGS $(COPTS) fd2pragma.c
+
+fd2pragma_rdargs_os4: fd2pragma.c
+	$(CCOS4) -o $@ -D__USE_INLINE__ -DFD2PRAGMA_READARGS $(COPTS) fd2pragma.c
+
+fd2pragma_rdargs_mos: fd2pragma.c
+	$(CCMOS) -o $@ $(COPTS) -DFD2PRAGMA_READARGS fd2pragma.c

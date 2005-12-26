@@ -1,6 +1,6 @@
-CC68K = vc +aos68k_powerup
-CCOS4 = vc +aosppc_powerup
-CCMOS = vc +morphos_powerup
+CC68K = vc +aos68k
+CCOS4 = vc +aosppc
+CCMOS = vc +morphos
 COPTS = -DFD2PRAGMA_READARGS -DFD2PRAGMA_AMIGA
 
 all: fd2pragma_os3 fd2pragma_os4 fd2pragma_mos

@@ -1718,32 +1718,6 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {"Inet_NtoA",                   0}, /* socket.library */
 {"vsyslog",                     "syslog"},
 {"NewPPCStackSwap",             0},
-{"SDL_MapRGBA",                 0},
-{"SDL_GetRGBA",                 0},
-{"pixelRGBA",                   0},
-{"hlineRGBA",                   0},
-{"vlineRGBA",                   0},
-{"rectangleRGBA",               0},
-{"boxRGBA",                     0},
-{"lineRGBA",                    0},
-{"aalineRGBA",                  0},
-{"circleRGBA",                  0},
-{"aacircleRGBA",                0},
-{"filledCircleRGBA",            0},
-{"ellipseRGBA",                 0},
-{"aaellipseRGBA",               0},
-{"filledEllipseRGBA",           0},
-{"pieRGBA",                     0},
-{"filledPieRGBA",               0},
-{"trigonRGBA",                  0},
-{"aatrigonRGBA",                0},
-{"filledTrigonRGBA",            0},
-{"polygonRGBA",                 0},
-{"aapolygonRGBA",               0},
-{"filledPolygonRGBA",           0},
-{"bezierRGBA",                  0},
-{"characterRGBA",               0},
-{"stringRGBA",                  0},
 {"FindTagItemPPC",              0},
 {"GetTagDataPPC",               0},
 {"GetInfo",                     0},
@@ -2197,6 +2171,7 @@ static uint32 MakeTagFunction(struct AmiPragma *ap)
     /* skip names with DMA or MESA at end */
     if(!strcmp(ap->FuncName+len-3, "DMA") ||
     !strcmp(ap->FuncName+len-4, "MESA") ||
+    !strcmp(ap->FuncName+len-4, "RGBA") ||
     !strcmp(ap->FuncName+len-5, "AMIGA"))
     { ap->Flags ^= AMIPRAGFLAG_OWNTAGFUNC; --tagfuncs; return 1;}
     if(!(ap->TagName = DupString(ap->FuncName, len-1)))

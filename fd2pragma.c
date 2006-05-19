@@ -1696,6 +1696,7 @@ static const struct Proto_LibType Proto_LibTypes[] = {
 {"MC680x0Base",           0,                "680x0.library",       "mc680x0"},
 {"P96Base",               0,                "Picasso96API.library","Picasso96"},
 {"Warp3DPPCBase",         0,                "Warp3DPPC.library"   ,"Warp3D"},
+{"CyberGfxBase",          0,                "cybergraphics.library", "cybergraphics"},
 {0, 0, 0, 0},
 };
 
@@ -11898,6 +11899,7 @@ static uint32 GetName(struct NameList *t, struct ShortListRoot *p, uint32 args)
   memset(&ap, 0, sizeof(struct AmiPragma));
   ap.FuncName = t->NormName;
   ap.NumArgs = 1;
+  ap.CallArgs = 1;
   ap.Args[0].ArgName = (args ? "args" : "tags");
   if(!MakeTagFunction(&ap))
     return 0;

@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.191 (01.11.2005) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.192 (06.01.2010) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -315,6 +315,8 @@ static const char version[] =
  2.191 01.11.05 : (phx) Rewrote FuncVBCCWOSInline() based on the MOSInline-
         function, to be able to handle varargs functions correctly.
         Also fixed WOS-text and -code generation for PPC0-ABI. 
+ 2.192 06.01.10 : (phx) Do vbcc MorphOS OS-calls with BCTRL instead of BLRL
+        to avoid messing up the LR-stack of more recent PowerPCs (G4+).
 */
 
 /* A short note, how fd2pragma works.
@@ -6828,8 +6830,8 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
       DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",
       PPCRegPrefix,3+k+1,PPCRegPrefix);
     }
-    DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
-    "\t\"\\tblrl\";\n", PPCRegPrefix);
+    DoOutput("\t\"\\tmtctr\\t%s0\\n\"\n"
+    "\t\"\\tbctrl\";\n", PPCRegPrefix);
   }
   else if(ap->Flags & (AMIPRAGFLAG_MOSSYSV|AMIPRAGFLAG_MOSSYSVR12))
   {
@@ -6847,8 +6849,8 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
       DoOutput("\t\"\\taddi\\t%s%ld,%s1,8\\n\"\n",
       PPCRegPrefix,3+k+1,PPCRegPrefix);
     }
-    DoOutput("\t\"\\tmtlr\\t%s0\\n\"\n"
-             "\t\"\\tblrl\";\n", PPCRegPrefix);
+    DoOutput("\t\"\\tmtctr\\t%s0\\n\"\n"
+             "\t\"\\tbctrl\";\n", PPCRegPrefix);
   }
   else
   {
@@ -6873,7 +6875,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
         k += 8+1-i;
     }
 
-    DoOutput("\t\"\\tmtlr\\t%s11\\n\"\n", PPCRegPrefix);
+    DoOutput("\t\"\\tmtctr\\t%s11\\n\"\n", PPCRegPrefix);
     for(i = 0; i < ap->NumArgs; ++i)
     {
       if(!(flags & FUNCFLAG_TAG) || i < ap->NumArgs-1)
@@ -6891,7 +6893,7 @@ uint32 FuncVBCCMorphInline(struct AmiPragma *ap, uint32 flags, strptr name)
       }
       DoOutput("%d(%s2)\\n\"\n", 4*ap->Args[i].ArgReg, PPCRegPrefix);
     }
-    DoOutput("\t\"\\tli\\t%s3,-%d\\n\"\n\t\"\\tblrl\";\n", PPCRegPrefix,
+    DoOutput("\t\"\\tli\\t%s3,-%d\\n\"\n\t\"\\tbctrl\";\n", PPCRegPrefix,
     ap->Bias);
   }
 
@@ -8119,7 +8121,7 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
 
     if(ap->Flags & AMIPRAGFLAG_MOSBASESYSV)
     {
-      DoOutput("\tlwz\t%s0,-%d(%s3)\n\tmtlr\t%s0\n\tblrl\n",
+      DoOutput("\tlwz\t%s0,-%d(%s3)\n\tmtctr\t%s0\n\tbctrl\n",
       PPCRegPrefix, ap->Bias-2, PPCRegPrefix, PPCRegPrefix);
     }
     else
@@ -8152,7 +8154,7 @@ uint32 FuncVBCCMorphText(struct AmiPragma *ap, uint32 flags, strptr name)
       DoOutput("\tli\t%s3,-%d\n", /* store offset in EmulHandle */
       PPCRegPrefix, ap->Bias);
 
-      DoOutput("\tmtlr\t%s11\n\tblrl\n", PPCRegPrefix);
+      DoOutput("\tmtctr\t%s11\n\tbctrl\n", PPCRegPrefix);
     }
 
     if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
@@ -8387,9 +8389,8 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
     {
       /* lwz r0,X(r3) */
       EndPutM32Inc(data, 0x80040000 - (ap->Bias-2));
-      /* mtlr r0 = mtspr 8,r0 = restore link register */
-      EndPutM32Inc(data, 0x7C0803A6);
-      EndPutM32Inc(data, 0x4E800021); /* blrl = bclrl 20,0 */
+      EndPutM32Inc(data, 0x7C0903A6); /* mtctr r0 */
+      EndPutM32Inc(data, 0x4E800421); /* bctrl */
     }
     else
     {
@@ -8424,8 +8425,8 @@ uint32 FuncVBCCMorphCode(struct AmiPragma *ap, uint32 flags, strptr name)
     /* Now place the real function call */
     EndPutM32Inc(data, 0x38600000 + 0x10000 - ap->Bias);          /* li r3,-(ap->Bias) = addi r3,0,-ap->Bias */
 
-    EndPutM32Inc(data, 0x7D6803A6);                               /* mtlr r11 = mtspr 8,r11 = restore link register */
-    EndPutM32Inc(data, 0x4E800021);                               /* blrl = bclrl 20,0 */
+    EndPutM32Inc(data, 0x7D6903A6);                               /* mtctr r11 */
+    EndPutM32Inc(data, 0x4E800421);                               /* bctrl */
 
     if(nrcopyar) /* Varargs. Rebuild the caller's stack-frame. */
     {

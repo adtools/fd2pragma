@@ -57,6 +57,7 @@ GLUnurbsObj		: struct !
 GLvisual		: struct gl_visual
 GLframebuffer		: struct gl_frame_buffer
 GLcontext		: struct gl_context
+GLContext		: struct !
 * HGIDA.library
 HGIDA_Stack		: unsigned long *
 HGIDA_BoundedStack	: unsigned long *

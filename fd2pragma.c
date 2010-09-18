@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.192 (06.01.2010) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.193 (18.09.2010) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -317,6 +317,7 @@ static const char version[] =
         Also fixed WOS-text and -code generation for PPC0-ABI. 
  2.192 06.01.10 : (phx) Do vbcc MorphOS OS-calls with BCTRL instead of BLRL
         to avoid messing up the LR-stack of more recent PowerPCs (G4+).
+ 2.193 18.09.10 : (phx) GLContext type (tinygl).
 */
 
 /* A short note, how fd2pragma works.
@@ -1305,6 +1306,7 @@ static uint8 InternalTypes[] = {
 "GLvisual:struct gl_visual\n"
 "GLframebuffer:struct gl_frame_buffer\n"
 "GLcontext:struct gl_context\n"
+"GLContext:struct !\n"
 "HGIDA_Stack:unsigned long *\n"
 "HGIDA_BoundedStack:unsigned long *\n"
 "HGIDA_Queue:unsigned long *\n"

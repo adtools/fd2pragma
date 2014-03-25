@@ -12440,6 +12440,11 @@ static uint32 CreateFDFile(void)
 #ifdef FD2PRAGMA_READARGS
 #include <proto/dos.h>
 
+/* undefine OS4 HUNKNAME macro */
+#ifdef HUNKNAME
+#undef HUNKNAME
+#endif
+
 #define PARAM   "FROM=INFILE/A,SPECIAL/N,MODE/N,"                       \
                 "TO/K,ABI/K,CLIB/K,COPYRIGHT/K,HEADER/K,HUNKNAME/K,"    \
                 "BASENAME/K,LIBTYPE/K,LIBNAME/K,PRIORITY/N/K,"          \

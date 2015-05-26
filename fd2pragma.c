@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.194 (02.01.2011) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.195 (24.05.2015) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -320,6 +320,8 @@ static const char version[] =
  2.193 18.09.10 : (phx) GLContext type (tinygl).
  2.194 03.01.11 : (mazze) Fix for building it on CYGWIN.
                           Added AROS support in the proto file.
+ 2.195 24.05.15 : (phx) Merge data-register pairs from the FD file for
+        64-bit data types when generating vbcc 68k assembler inlines.
 */
 
 /* A short note, how fd2pragma works.
@@ -558,18 +560,21 @@ static const strptr RegNames[] = {
 "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7",
 "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
 "fp0", "fp1", "fp2", "fp3", "fp4", "fp5", "fp6", "fp7",
+"d0/d1", "d2/d3", "d4/d5", "d6/d7",
 };
 
 static const strptr RegNamesUpper[] = {
 "D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7",
 "A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7",
 "FP0", "FP1", "FP2", "FP3", "FP4", "FP5", "FP6", "FP7",
+"D0/D1", "D2/D3", "D4/D5", "D6/D7",
 };
 
 enum Register_ID {
 REG_D0, REG_D1, REG_D2, REG_D3, REG_D4, REG_D5, REG_D6, REG_D7,
 REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7,
-REG_FP0, REG_FP1, REG_FP2, REG_FP3, REG_FP4, REG_FP5, REG_FP6, REG_FP7
+REG_FP0, REG_FP1, REG_FP2, REG_FP3, REG_FP4, REG_FP5, REG_FP6, REG_FP7,
+REG_D0D1, REG_D2D3, REG_D4D5, REG_D6D7
 };
 #define MAXREGPPC       26
 #define MAXREG          24 /* maximum registers of 68K */
@@ -3921,6 +3926,33 @@ static void FindHeader(void)
   }
 }
 
+/* merge data register pairs for 64-bit argument types */
+static void FindRegPairs(struct AmiPragma *ap, struct ClibData *cd)
+{
+  int i, j, k;
+
+  for(i = 0, j = 0, k = 0; i < ap->CallArgs || j < ap->NumArgs; ++i, ++j)
+  {
+    if(i < ap->CallArgs && (cd->Args[i].Type == CPP_TYPE_DOUBLE ||
+                            cd->Args[i].Type == CPP_TYPE_LONGLONG)
+       && j < ap->NumArgs-1 && ap->Args[j].ArgReg < REG_D7
+       && (ap->Args[j].ArgReg & 1) == 0
+       && ap->Args[j].ArgReg + 1 == ap->Args[j+1].ArgReg)
+    {
+      ap->Args[k++].ArgReg = REG_D0D1 + (ap->Args[j].ArgReg - REG_D0) / 2;
+      ++j;  /* skip next ArgReg */
+    }
+    else if(j < ap->NumArgs)
+      ap->Args[k++].ArgReg = ap->Args[j].ArgReg;
+  }
+
+  ap->NumArgs = k;
+  if (ap->NumArgs != ap->CallArgs)
+    ap->Flags |= AMIPRAGFLAG_ARGCOUNT;
+  else
+    ap->Flags &= ~AMIPRAGFLAG_ARGCOUNT;
+}
+
 /* returns decrement data in bits 0-15 and increment data in bits 16-31 */
 static uint32 GetRegisterData(struct AmiPragma *ap)
 {
@@ -6455,10 +6487,13 @@ uint32 FuncVBCCInline(struct AmiPragma *ap, uint32 flags, strptr name)
   strptr c1, c2;
   int32 i, k;
 
-  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_PPC))
+  if(!(cd = GetClibFunc(name, ap, flags)))
     return 1;
 
-  if(!(cd = GetClibFunc(name, ap, flags)))
+  /* find register pairs for 64-bit types (long long, double) */
+  FindRegPairs(ap, cd);
+
+  if(CheckError(ap, AMIPRAGFLAG_ARGCOUNT|AMIPRAGFLAG_PPC))
     return 1;
 
   c1 = Flags & FLAG_NEWSYNTAX ? "(" : ""; /*)*/
@@ -13668,4 +13703,3 @@ int main(int argc, char **argv)
 
   return 0;
 }
-

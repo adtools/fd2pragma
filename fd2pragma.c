@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.195 (24.05.2015) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.196 (06.02.2016) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -322,6 +322,9 @@ static const char version[] =
                           Added AROS support in the proto file.
  2.195 24.05.15 : (phx) Merge data-register pairs from the FD file for
         64-bit data types when generating vbcc 68k assembler inlines.
+ 2.196 06.02.16 : (phx) Varargs function for rtEZRequestA() is
+        rtEZRequestTags(). rtEZRequest() has swapped arguments and needs
+        to be implemented in amiga.lib.
 */
 
 /* A short note, how fd2pragma works.
@@ -1739,6 +1742,7 @@ static const struct Pragma_ExecpName Pragma_ExecpNames[] = {
 {"W3D_RequestMode",             "W3D_RequestModeTags"},
 {"W3D_AllocTexObj",             "W3D_AllocTexObjTags"},
 {"W3D_BestModeID",              "W3D_BestModeIDTags"},
+{"rtEZRequestA",                "rtEZRequestTags"},
 {0,0},
 };
 

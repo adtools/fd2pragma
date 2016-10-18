@@ -1,6 +1,6 @@
 /* $Id$ */
 static const char version[] =
-"$VER: fd2pragma 2.196 (06.02.2016) by Dirk Stoecker <software@dstoecker.de>";
+"$VER: fd2pragma 2.197 (09.10.2016) by Dirk Stoecker <software@dstoecker.de>";
 
 /* There are four defines, which alter the result which is produced after
    compiling this piece of code. */
@@ -325,6 +325,9 @@ static const char version[] =
  2.196 06.02.16 : (phx) Varargs function for rtEZRequestA() is
         rtEZRequestTags(). rtEZRequest() has swapped arguments and needs
         to be implemented in amiga.lib.
+ 2.197 09.10.16 : (phx) ShortBaseName must not be enforced as lower case.
+        Some libraries, like Warp3D and Picasso96API, have upper case letters
+        in their FD, proto and clib file names.
 */
 
 /* A short note, how fd2pragma works.
@@ -2065,9 +2068,12 @@ static int32 MakeShortBaseName(void)
   if(!ShortBaseName)
     return 0;
 
+#if 0
+/* @@@ Why? Doesn't work for Warp3D and Picasso96API. (phx) */
   ptr = ShortBaseName;
   while((*ptr = tolower(*ptr))) /* Convert to lowercase */
     ptr++;
+#endif
   
   if((ShortBaseNameUpper = DupString(ShortBaseName, strlen(ShortBaseName))))
   {

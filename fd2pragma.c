@@ -11667,7 +11667,7 @@ static uint32 CreateXML(void)
   "<!DOCTYPE library SYSTEM \"library.dtd\">\n"
   "<library name=\"%s\" basename=\"%s\" openname=\"%s\"",
   ShortBaseName, BaseName, GetLibraryName());
-  if(GetBaseTypeLib() != "Library")
+  if(strcmp(GetBaseTypeLib(), "Library") != 0)
     DoOutput(" basetype=\"%s\"", GetBaseTypeLib());
   DoOutput(">\n");
   for(inc = (struct Include *) Includes.First; inc;

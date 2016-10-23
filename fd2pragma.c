@@ -394,12 +394,20 @@ users to use their brains :-)
 #ifdef __amigaos4__
 #include <exec/types.h>
 #else
+#include <limits.h>
 typedef signed char         int8;       /* signed 8 bit */
 typedef unsigned char      uint8;       /* unsigned 8 bit */
 typedef signed short int    int16;      /* signed 16 bit */
 typedef unsigned short int uint16;      /* unsigned 16 bit */
+#if (LONG_MAX == 2147483647L)
 typedef signed long int     int32;      /* signed 32 bit */
 typedef unsigned long int  uint32;      /* unsigned 32 bit */
+#elif (INT_MAX == 2147483647)
+typedef signed int          int32;      /* signed 32 bit */
+typedef unsigned int       uint32;      /* unsigned 32 bit */
+#else
+#error define a 32bit integral type
+#endif /* int32_t */
 #endif
 typedef float                fl32;      /* 32 bit IEEE float value */
 typedef double               fl64;      /* 64 bit IEEE double value */

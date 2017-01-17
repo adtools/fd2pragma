@@ -1828,7 +1828,7 @@ static const strptr Keywords[] =
   0
 };
 
-#if !defined __SASC && !defined __AROS__ && !defined _WIN32 && !defined __CYGWIN__
+#if !defined __SASC && !defined __AROS__ && !defined _WIN32
 static int stricmp(const char *a, const char *b)
 {
   while(*a && tolower(*a) == tolower(*b))

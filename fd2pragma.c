@@ -328,6 +328,8 @@ static const char version[] =
  2.197 09.10.16 : (phx) ShortBaseName must not be enforced as lower case.
         Some libraries, like Warp3D and Picasso96API, have upper case letters
         in their FD, proto and clib file names.
+ 2.198 27.10.18 : (sba) For special 42 format, don't put used registers in the
+        clobber list as newer GCC complain about this.
 */
 
 /* A short note, how fd2pragma works.
@@ -590,6 +592,11 @@ REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7,
 REG_FP0, REG_FP1, REG_FP2, REG_FP3, REG_FP4, REG_FP5, REG_FP6, REG_FP7,
 REG_D0D1, REG_D2D3, REG_D4D5, REG_D6D7
 };
+
+static const char ClobberRegs [] = {
+  REG_D0, REG_D1, REG_A0, REG_A1, REG_FP0, REG_FP1
+};
+
 #define MAXREGPPC       26
 #define MAXREG          24 /* maximum registers of 68K */
 #define MAXREGNF        16 /* maximum register number without float regs */
@@ -6047,12 +6054,28 @@ uint32 FuncInline(struct AmiPragma *ap, uint32 flags, strptr name)
     DoOutput("\"r\" (%s)%s", RegNames[j], (i < ap->NumArgs-1 ? ", " : ""));
   }
 
-  DoOutput("\n  : \"d0\", \"d1\", \"a0\", \"a1\", \"fp0\", \"fp1\"");
+  /* Add clober list, we may not add the registers that are already contained
+   * in the input or output though, otherwise gcc may complain */
+  DoOutput("\n  : ");
+  for(i = 0; i < sizeof(ClobberRegs) / sizeof(ClobberRegs[0]); ++i)
+  {
+    int used = 0;
+    for(j = 0; j < ap->NumArgs; ++j)
+    {
+      if (ClobberRegs[i] == ap->Args[j].ArgReg)
+      {
+        used = 1;
+        break;
+      }
+    }
+    if(!used)
+      DoOutput("\"%s\", ", RegNames[ClobberRegs[i]]);
+  }
 
   if(noret)
-    return DoOutput(/*({*/", \"cc\", \"memory\");\n}\n\n");
+    return DoOutput(/*({*/"\"cc\", \"memory\");\n}\n\n");
   else
-    return DoOutput(/*({*/", \"cc\", \"memory\");\n  return res;\n}\n\n");
+    return DoOutput(/*({*/"\"cc\", \"memory\");\n  return res;\n}\n\n");
 }
 
 

@@ -991,12 +991,12 @@
    ({								\
       register void *const _##name##_bn __asm("a6") = (bn);	\
       register rt _##name##_re __asm("d0");			\
-      register t3 _n3 __asm(#r3) = _##name##_v3;		\
-      register t2 _n2 __asm(#r2) = _##name##_v2;		\
       register t6 _n6 __asm(#r6) = _##name##_v6;		\
-      register t5 _n5 __asm(#r5) = _##name##_v5;		\
-      register t4 _n4 __asm(#r4) = _##name##_v4;		\
       register t1 _n1 __asm(#r1) = _##name##_v1;		\
+      register t4 _n4 __asm(#r4) = _##name##_v4;		\
+      register t3 _n3 __asm(#r3) = _##name##_v3;		\
+      register t5 _n5 __asm(#r5) = _##name##_v5;		\
+      register t2 _n2 __asm(#r2) = _##name##_v2;		\
       register int _d1 __asm("d1");				\
       register int _a0 __asm("a0");				\
       register int _a1 __asm("a1");				\

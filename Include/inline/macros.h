@@ -11,7 +11,7 @@
    Modifiers (variations are possible):
    NR - no return (void),
    A4, A5 - "a4" or "a5" is used as one of the arguments,
-   UB - base will be given explicitly by user (see cia.resource).
+   NB - base will be given explicitly by user (see cia.resource).
    FP - one of the parameters has type "pointer to function".
    FR - the return type is a "pointer to function".
 
@@ -297,7 +297,7 @@
 })
 
 /* Only cia.resource/AbleICR() and cia.resource/SetICR() */
-#define LP2UB(offs, rt, name, t1, v1, r1, t2, v2, r2)		\
+#define LP2NB(offs, rt, name, t1, v1, r1, t2, v2, r2)		\
 ({								\
    t1 _##name##_v1 = (v1);					\
    t2 _##name##_v2 = (v2);					\
@@ -432,7 +432,7 @@
 })
 
 /* Only cia.resource/AddICRVector() */
-#define LP3UB(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3) \
+#define LP3NB(offs, rt, name, t1, v1, r1, t2, v2, r2, t3, v3, r3) \
 ({								\
    t1 _##name##_v1 = (v1);					\
    t2 _##name##_v2 = (v2);					\
@@ -456,7 +456,7 @@
 })
 
 /* Only cia.resource/RemICRVector() */
-#define LP3NRUB(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3)	\
+#define LP3NRNB(offs, name, t1, v1, r1, t2, v2, r2, t3, v3, r3)	\
 ({								\
    t1 _##name##_v1 = (v1);					\
    t2 _##name##_v2 = (v2);					\
